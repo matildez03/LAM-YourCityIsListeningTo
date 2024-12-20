@@ -16,7 +16,7 @@ object RetrofitInstance {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create()) //convertitore gson per serializzare le risposte JSOn in oggetti kt
             .build()
     }
 
