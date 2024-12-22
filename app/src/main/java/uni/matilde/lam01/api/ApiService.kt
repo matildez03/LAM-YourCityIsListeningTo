@@ -16,4 +16,5 @@ interface ApiService {
 
     @GET("audio/all")
     suspend fun getAllSongs(): Response<List<AudioEntity>>
+
 }

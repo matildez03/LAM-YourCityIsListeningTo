@@ -9,23 +9,53 @@ import uni.matilde.lam01.data.remote.models.AuthResponse
 import uni.matilde.lam01.data.remote.models.TokenResponse
 import uni.matilde.lam01.data.remote.repository.AuthRepository
 
-class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
-    private val _authResult = MutableLiveData<Result<AuthResponse>>()
-    val authResult: LiveData<Result<AuthResponse>> = _authResult
-
-    fun signUp(username: String, password: String) {
-        viewModelScope.launch {
-            _authResult.value = repository.signUp(username, password)
-        }
-    }
-
-    private val _tokenResult = MutableLiveData<Result<TokenResponse>>()
-    val tokenResult: LiveData<Result<TokenResponse>> = _tokenResult
-
-    fun getToken(username: String, password: String) {
-        viewModelScope.launch {
-            _tokenResult.value = repository.getToken(username, password)
-        }
-    }
+// Stato sigillato per rappresentare i vari stati del processo di autenticazione
+sealed class AuthState {
+    object Loading : AuthState()
+    data class Success<T>(val data: T) : AuthState()
+    data class Error(val message: String?) : AuthState()
 }
 
+class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
+
+    // MutableLiveData privata per gestire lo stato internamente
+    private val _authState = MutableLiveData<AuthState?>()
+    val authState: LiveData<AuthState?> = _authState
+
+    // Funzione per gestire il login
+    fun login(username: String, password: String) {
+        viewModelScope.launch {
+            // Imposta lo stato su Loading prima di iniziare l'operazione
+            _authState.value = AuthState.Loading
+            // Chiamata al repository per ottenere il token
+            val result = repository.getToken(username, password)
+            // Gestione esplicita di successo ed errore
+            if (result.isSuccess) {
+                _authState.value = AuthState.Success(result.getOrNull()!!)
+            } else {
+                _authState.value = AuthState.Error(result.exceptionOrNull()?.message)
+            }
+        }
+    }
+
+    // Funzione per la registrazione
+    fun signUp(username: String, password: String) {
+        viewModelScope.launch {
+            // Imposta lo stato su Loading prima di iniziare l'operazione
+            _authState.value = AuthState.Loading
+            // Chiamata al repository per registrare l'utente
+            val result = repository.signUp(username, password)
+            // Gestione esplicita di successo ed errore
+            if (result.isSuccess) {
+                _authState.value = AuthState.Success(result.getOrNull()!!)
+            } else {
+                _authState.value = AuthState.Error(result.exceptionOrNull()?.message)
+            }
+        }
+    }
+
+    // Funzione per reimpostare lo stato (opzionale)
+    fun resetAuthState() {
+        _authState.value = null
+    }
+}

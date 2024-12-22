@@ -4,12 +4,32 @@ package uni.matilde.lam01.api
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
+import okhttp3.logging.HttpLoggingInterceptor
+
+
 
 object RetrofitInstance {
     private const val BASE_URL = "http://130.136.2.83/lam2024/"
 
     private val client: OkHttpClient by lazy {
-        OkHttpClient.Builder().build()
+        // Configura l'interceptor per il logging
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY // Mostra tutto il corpo delle richieste e risposte
+        }
+
+        OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor) // Aggiunge il logging
+            .addInterceptor { chain -> // Aggiunge l'interceptor per gli header
+                val request = chain.request().newBuilder()
+                    .addHeader("Content-Type", "application/json")
+                    .build()
+                chain.proceed(request)
+            }
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
     }
 
     private val retrofit: Retrofit by lazy {

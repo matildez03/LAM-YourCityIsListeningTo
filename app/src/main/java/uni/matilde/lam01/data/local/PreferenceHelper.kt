@@ -2,6 +2,7 @@ package uni.matilde.lam01.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.lifecycle.LiveData
 
 class PreferencesHelper(context: Context) {
@@ -17,12 +18,15 @@ class PreferencesHelper(context: Context) {
 
     // Salva il token di autenticazione
     fun saveToken(token: String) {
+        Log.d("PreferencesHelper", "Saving token: $token")
         sharedPreferences.edit().putString(KEY_AUTH_TOKEN, token).apply()
     }
 
     // Recupera il token di autenticazione
     fun getToken(): String? {
-        return sharedPreferences.getString(KEY_AUTH_TOKEN, null)
+        val token = sharedPreferences.getString("token", null)
+        Log.d("PreferencesHelper", "Token letto: $token") //debug
+        return token
     }
 
     // LiveData per osservare il token
@@ -43,6 +47,10 @@ class PreferencesHelper(context: Context) {
     // Cancella tutte le preferenze salvate (ad esempio, durante il logout)
     fun clearPreferences() {
         sharedPreferences.edit().clear().apply()
+    }
+
+    fun clearToken() {
+        sharedPreferences.edit().remove("auth_token").apply()
     }
 
     // Implementazione delle sharedPreferences sottoforma di livedata
