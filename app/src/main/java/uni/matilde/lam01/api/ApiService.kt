@@ -11,8 +11,12 @@ interface ApiService {
     @POST("auth")
     suspend fun signUp(@Body requestBody: AuthRequest): Response<AuthResponse>
 
+    @FormUrlEncoded
     @POST("auth/token")
-    suspend fun getToken(@Body requestBody: AuthRequest): Response<TokenResponse>
+    suspend fun getToken(
+        @Field("username") username: String,
+        @Field("password") password: String
+    ): Response<TokenResponse>
 
     @GET("audio/all")
     suspend fun getAllSongs(): Response<List<AudioEntity>>

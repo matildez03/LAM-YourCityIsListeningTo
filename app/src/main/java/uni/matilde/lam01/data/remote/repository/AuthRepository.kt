@@ -56,18 +56,20 @@ class AuthRepository(
 
     suspend fun getToken(username: String, password: String): Result<TokenResponse> {
         return handleApiCall {
-            val response: Response<TokenResponse> = apiService.getToken(AuthRequest(username, password))
+            val response: Response<TokenResponse> = apiService.getToken(username, password)
             if (response.isSuccessful) {
                 response.body()?.let { tokenResponse ->
                     // Salva il token nelle preferenze
-                    preferencesHelper.saveToken(tokenResponse.token)
+                    preferencesHelper.saveToken(tokenResponse.client_secret)
                     Result.success(tokenResponse)
                 } ?: Result.failure(Exception("Risposta vuota dal server"))
             } else {
-                Result.failure(Exception("Errore durante l'autenticazione: ${response.errorBody()?.string()}"))
+                val error = response.errorBody()?.string() ?: "Errore sconosciuto"
+                Result.failure(Exception("Errore durante l'autenticazione: $error"))
             }
         }
     }
+
 
     /**
      * Funzione generica per gestire le chiamate API

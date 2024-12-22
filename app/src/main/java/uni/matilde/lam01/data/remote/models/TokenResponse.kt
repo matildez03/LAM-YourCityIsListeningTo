@@ -1,6 +1,6 @@
 package uni.matilde.lam01.data.remote.models
 
 data class TokenResponse(
-    val clientId: Int,
-    val token: String
+    val client_id: Int,
+    val client_secret: String
 )
