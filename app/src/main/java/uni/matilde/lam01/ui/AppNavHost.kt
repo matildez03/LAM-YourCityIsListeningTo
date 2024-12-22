@@ -22,7 +22,7 @@ fun AppNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = if (isAuthenticated) "home" else "auth"
+        startDestination = if (isAuthenticated) "map" else "auth"
     ) {
         composable("auth") {
             MainAuthScreen(
@@ -35,7 +35,7 @@ fun AppNavHost(
                 factory = AuthViewModelFactory(App.instance.authRepository) // Crea l'istanza della factory
             )
         }
-        composable("home") { //la schermata principale è direttamente la mappa
+        composable("map") { //la schermata principale è direttamente la mappa
             MainMapScreen()
         }
     }
