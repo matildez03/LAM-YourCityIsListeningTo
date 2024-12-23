@@ -5,7 +5,9 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.material.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -17,12 +19,21 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.material3.Button
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-
+import androidx.compose.material3.rememberDrawerState
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.launch
+import uni.matilde.lam01.ui.DrawerContent
 
 
 @Composable
-fun MainMapScreen(viewModel: MapViewModel = viewModel()) {
+fun MainMapScreen(viewModel: MapViewModel = viewModel(), navController: NavController) {
     val context = LocalContext.current
 
     // Gestione dei permessi di posizione
@@ -30,7 +41,12 @@ fun MainMapScreen(viewModel: MapViewModel = viewModel()) {
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
             if (isGranted) {
-                viewModel.updateUserLocation(LatLng(44.4949, 11.3426)) // Posizione iniziale se il permesso è concesso
+                viewModel.updateUserLocation(
+                    LatLng(
+                        44.4949,
+                        11.3426
+                    )
+                ) // Posizione iniziale se il permesso è concesso
             }
         }
     )
@@ -65,30 +81,59 @@ fun MainMapScreen(viewModel: MapViewModel = viewModel()) {
     }
 
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        GoogleMap(
-            modifier = Modifier.weight(1f),
-            cameraPositionState = cameraPositionState
-        ) {
-            // Aggiunge marker sulla mappa
-            markers.forEach { marker ->
-                MapMarker(
-                    position = marker.position,
-                    title = marker.title,
-                    description = marker.description
+    val scope = rememberCoroutineScope()
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+
+    ModalNavigationDrawer(
+        drawerState = rememberDrawerState(DrawerValue.Closed),
+        drawerContent = {
+            DrawerContent(navController, onClose = { scope.launch { drawerState.close() } }
+            )
+        }
+    )
+    {
+        Scaffold(
+            topBar = @androidx.compose.runtime.Composable {
+                TopAppBar(
+                    title = { Text("Mappa") },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Default.Person, contentDescription = "Apri Profilo")
+                        }
+                    }
                 )
             }
-        }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                GoogleMap(
+                    modifier = Modifier.weight(1f),
+                    cameraPositionState = cameraPositionState
+                ) {
+                    // Aggiunge marker sulla mappa
+                    markers.forEach { marker ->
+                        MapMarker(
+                            position = marker.position,
+                            title = marker.title,
+                            description = marker.description
+                        )
+                    }
+                }
 
-        Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
-            onClick = { viewModel.fetchMarkers() },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text("Aggiorna Marker")
+                Button(
+                    onClick = { viewModel.fetchMarkers() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text("Aggiorna Marker")
+                }
+            }
         }
     }
 }

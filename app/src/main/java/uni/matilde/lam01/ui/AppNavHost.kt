@@ -36,7 +36,7 @@ fun AppNavHost(
             )
         }
         composable("map") { //la schermata principale è direttamente la mappa
-            MainMapScreen()
+            MainMapScreen(navController = navController)
         }
     }
 }
