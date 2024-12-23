@@ -38,6 +38,14 @@ fun AppNavHost(
         composable("map") { //la schermata principale è direttamente la mappa
             MainMapScreen(navController = navController)
         }
+
+        composable("audios") {
+            //todo("crea composable della schermata della gestione degli audio)
+        }
+
+        composable("notifications") {
+            //todo:schermata delle notifiche
+        }
     }
 }
 

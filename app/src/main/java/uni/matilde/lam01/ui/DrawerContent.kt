@@ -2,6 +2,8 @@ package uni.matilde.lam01.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
@@ -9,6 +11,7 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,12 +24,17 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-
-
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 
 @Composable
 fun DrawerContent(navController: NavController, onClose: () -> Unit) {
+    var showDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.Top
@@ -72,10 +80,43 @@ fun DrawerContent(navController: NavController, onClose: () -> Unit) {
             navController.navigate("notifications")
             onClose()
         })
-        DrawerItem("Logout", Icons.Default.ExitToApp, onClick = {
-            navController.navigate("logout")
-            onClose()
-        })
+        Spacer(modifier = Modifier.weight(1f)) // Spinge il bottone di Logout in basso
+
+        Button(
+            onClick = { showDialog = true },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = MaterialTheme.colorScheme.error, // Colore di sfondo
+                contentColor = MaterialTheme.colorScheme.onError  // Colore del testo e delle icone
+            )
+        ) {
+            Icon(Icons.Default.ExitToApp, contentDescription = "Logout", modifier = Modifier.padding(end = 8.dp))
+            Text("Logout")
+        }
+    }
+    // Dialogo di conferma Logout
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false }, // Chiudi il dialogo se l'utente clicca fuori
+            title = { Text("Conferma Logout") },
+            text = { Text("Sei sicuro di voler effettuare il logout?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDialog = false
+                    onClose() // Chiudi il drawer
+                    navController.navigate("auth") {
+                        popUpTo("map") { inclusive = true } // Ripulisce lo stack di navigazione
+                    }
+                }) {
+                    Text("Conferma")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text("Annulla")
+                }
+            }
+        )
     }
 }
 
