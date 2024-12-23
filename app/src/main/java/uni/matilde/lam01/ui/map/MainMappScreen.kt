@@ -2,12 +2,16 @@ package uni.matilde.lam01.ui.map
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.rememberScaffoldState
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -29,11 +33,13 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
+import uni.matilde.lam01.data.remote.repository.AuthRepository
 import uni.matilde.lam01.ui.DrawerContent
+import uni.matilde.lam01.ui.auth.AuthViewModel
 
 
 @Composable
-fun MainMapScreen(viewModel: MapViewModel = viewModel(), navController: NavController) {
+fun MainMapScreen(viewModel: MapViewModel = viewModel(), authViewModel: AuthViewModel, navController: NavController) {
     val context = LocalContext.current
 
     // Gestione dei permessi di posizione
@@ -84,10 +90,16 @@ fun MainMapScreen(viewModel: MapViewModel = viewModel(), navController: NavContr
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
+
     ModalNavigationDrawer(
-        drawerState = rememberDrawerState(DrawerValue.Closed),
+        drawerState = drawerState,
+        gesturesEnabled = false, // Disabilita l'apertura tramite gesture
         drawerContent = {
-            DrawerContent(navController, onClose = { scope.launch { drawerState.close() } }
+            DrawerContent(
+                navController,
+                onClose = { scope.launch { drawerState.close() }
+                },
+                authViewModel = authViewModel
             )
         }
     )
@@ -97,8 +109,13 @@ fun MainMapScreen(viewModel: MapViewModel = viewModel(), navController: NavContr
                 TopAppBar(
                     title = { Text("Mappa") },
                     navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Person, contentDescription = "Apri Profilo")
+                        IconButton(onClick = {
+                            scope.launch {
+                               drawerState.open()
+                            }
+                            Log.d("click event","Button di apertura menù cliccato")
+                        }) {
+                            Icon(Icons.Default.Menu, contentDescription = "Apri Menù")
                         }
                     }
                 )

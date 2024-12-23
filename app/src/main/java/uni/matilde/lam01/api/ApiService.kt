@@ -5,6 +5,7 @@ import retrofit2.http.*
 import uni.matilde.lam01.data.local.AudioEntity
 import uni.matilde.lam01.data.remote.models.AuthRequest
 import uni.matilde.lam01.data.remote.models.AuthResponse
+import uni.matilde.lam01.data.remote.models.DeleteAccountResponse
 import uni.matilde.lam01.data.remote.models.TokenResponse
 
 interface ApiService {
@@ -17,6 +18,10 @@ interface ApiService {
         @Field("username") username: String,
         @Field("password") password: String
     ): Response<TokenResponse>
+
+
+    @DELETE("/auth/unsubscribe")
+    suspend fun deleteAccount(@Header("Authorization") token: String): Response<DeleteAccountResponse>
 
     @GET("audio/all")
     suspend fun getAllSongs(): Response<List<AudioEntity>>

@@ -95,8 +95,13 @@ fun SignUpScreen(
                     color = MaterialTheme.colorScheme.error
                 )
             }
-            null -> {
-                // Stato iniziale, nessuna azione
+            else -> {
+                // Stato iniziale o fallback
+                Text(
+                    text = "Inserisci le tue credenziali per effettuare il login.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
             }
         }
     }

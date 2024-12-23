@@ -5,6 +5,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import uni.matilde.lam01.App
+import uni.matilde.lam01.ui.auth.AuthViewModel
 import uni.matilde.lam01.ui.auth.AuthViewModelFactory
 import uni.matilde.lam01.ui.auth.MainAuthScreen
 import uni.matilde.lam01.ui.map.MainMapScreen
@@ -17,8 +18,13 @@ fun AppNavHost(
 ) {
     val navController = rememberNavController()
 
-    // repository dal contesto globale
-    val authRepository = App.instance.authRepository
+    // Ottieni l'istanza di AuthViewModel
+    val authViewModelFactory = AuthViewModelFactory(App.instance.authRepository)
+    val authViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+        modelClass = AuthViewModel::class.java,
+        factory = authViewModelFactory
+    )
+
 
     NavHost(
         navController = navController,
@@ -36,7 +42,7 @@ fun AppNavHost(
             )
         }
         composable("map") { //la schermata principale è direttamente la mappa
-            MainMapScreen(navController = navController)
+            MainMapScreen(navController = navController, authViewModel = authViewModel )
         }
 
         composable("audios") {

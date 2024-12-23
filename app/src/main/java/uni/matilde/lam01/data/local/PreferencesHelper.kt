@@ -10,7 +10,9 @@ class PreferencesHelper(context: Context) {
     companion object {
         private const val PREFS_NAME = "auth_prefs" // Nome del file delle SharedPreferences
         private const val KEY_AUTH_TOKEN = "auth_token" // Chiave per il token
+        private const val KEY_TOKEN_EXPIRATION = "token_expiration"
         private const val KEY_USERNAME = "username" // Chiave per il nome utente
+        private const val KEY_CLIENT_ID = "client_id" // Chiave per il client_id
     }
 
     private val sharedPreferences: SharedPreferences =
@@ -42,6 +44,27 @@ class PreferencesHelper(context: Context) {
     // Recupera il nome utente (esempio)
     fun getUsername(): String? {
         return sharedPreferences.getString(KEY_USERNAME, null)
+    }
+
+    fun saveClientId(clientId: Int) {
+        sharedPreferences.edit().putInt(KEY_CLIENT_ID, clientId).apply()
+    }
+
+    fun getClientId(): Int? {
+        val clientId = sharedPreferences.getInt(KEY_CLIENT_ID, -1)
+        return if (clientId != -1) clientId else null
+    }
+
+    fun saveTokenExpirationTime(expirationTime: Long) {
+        sharedPreferences.edit().putLong(KEY_TOKEN_EXPIRATION, expirationTime).apply()
+    }
+
+    fun getTokenExpirationTime(): Long? {
+        return if (sharedPreferences.contains(KEY_TOKEN_EXPIRATION)) {
+            sharedPreferences.getLong(KEY_TOKEN_EXPIRATION, 0)
+        } else {
+            null
+        }
     }
 
     // Cancella tutte le preferenze salvate (ad esempio, durante il logout)

@@ -91,8 +91,9 @@ fun LoginScreen(
                     color = MaterialTheme.colorScheme.error
                 )
             }
-            null -> {
-                // Stato iniziale, nessuna azione
+            else -> {
+                // Stato iniziale o fallback
+
             }
         }
     }
