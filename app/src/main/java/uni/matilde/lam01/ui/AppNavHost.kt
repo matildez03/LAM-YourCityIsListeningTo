@@ -33,7 +33,6 @@ fun AppNavHost(
         composable("auth") {
             MainAuthScreen(
                 navigateToHome = {
-                    onLoginSuccess("exampleToken")
                     navController.navigate("map") {
                         popUpTo("auth") { inclusive = true }
                     }

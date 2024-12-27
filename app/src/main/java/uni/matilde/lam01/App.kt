@@ -2,7 +2,7 @@ package uni.matilde.lam01
 
 import android.app.Application
 import uni.matilde.lam01.data.local.PreferencesHelper
-import uni.matilde.lam01.data.remote.TokenManager
+import uni.matilde.lam01.data.TokenManager
 import uni.matilde.lam01.data.remote.repository.AuthRepository
 
 class App : Application() {

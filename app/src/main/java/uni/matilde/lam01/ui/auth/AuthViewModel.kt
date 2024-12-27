@@ -6,9 +6,8 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
-import uni.matilde.lam01.data.remote.TokenManager
-import uni.matilde.lam01.data.remote.models.AuthResponse
-import uni.matilde.lam01.data.remote.models.TokenResponse
+import uni.matilde.lam01.data.TokenManager
+import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.data.remote.repository.AuthRepository
 
 // Stato sigillato per rappresentare i vari stati del processo di autenticazione
@@ -18,8 +17,10 @@ sealed class AuthState {
     data class Success<T>(val data: T) : AuthState()
     data class Error(val message: String?) : AuthState()
 }
-
-class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
+class AuthViewModel(
+    private val repository: AuthRepository,
+    private val preferencesHelper: PreferencesHelper
+) : ViewModel() {
 
     // MutableLiveData privata per gestire lo stato internamente
     private val _authState = MutableLiveData<AuthState?>()
@@ -69,6 +70,8 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
                 val response = repository.deleteAccount()
                 if (response.isSuccess) {
                     _authState.value = AuthState.Success("Account eliminato con successo.")
+                    Log.d("Delete","Account eliminato con successo.");
+
                 } else {
                     _authState.value = AuthState.Error("Errore durante l'eliminazione dell'account.")
                 }
@@ -83,7 +86,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     }
 
     fun isTokenValid(): Boolean {
-        return TokenManager.getToken() != null
+        return !TokenManager.needsTokenRenewal()
     }
 
     // Funzione per reimpostare lo stato (opzionale)

@@ -1,4 +1,4 @@
-package uni.matilde.lam01.data.remote
+package uni.matilde.lam01.data
 
 import kotlinx.coroutines.*
 import uni.matilde.lam01.data.local.PreferencesHelper
@@ -62,4 +62,7 @@ object TokenManager {
             clearToken()
         }
     }
+
+    // Controlla se il token ha bisogno di essere rinnovato: è scaduto o non è stato impostato
+    fun needsTokenRenewal(): Boolean = isTokenExpired() || token == null
 }

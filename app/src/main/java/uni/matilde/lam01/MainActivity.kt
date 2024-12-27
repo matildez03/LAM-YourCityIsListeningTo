@@ -38,27 +38,6 @@ class MainActivity : ComponentActivity() {
         }
         Log.d("MainActivity", "onCreate ended")
 
-        // Test della connessione diretta
-        testConnectionDirect()
-
-    }
-
-    private fun testConnectionDirect() {
-        Thread {
-            try {
-                val url = URL("http://130.136.2.83/lam2024/")
-                val connection = url.openConnection() as HttpURLConnection
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
-                connection.requestMethod = "GET"
-                connection.connect()
-
-                val responseCode = connection.responseCode
-                Log.d("ConnectionTest", "Response code: $responseCode")
-            } catch (e: Exception) {
-                Log.e("ConnectionTest", "Connection error: ${e.message}")
-            }
-        }.start()
     }
 }
 

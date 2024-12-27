@@ -3,11 +3,10 @@ package uni.matilde.lam01.data.remote.repository
 import android.util.Log
 import com.google.gson.Gson
 import retrofit2.Response
-import uni.matilde.lam01.App
 import uni.matilde.lam01.api.ApiService
 import uni.matilde.lam01.api.RetrofitInstance
 import uni.matilde.lam01.data.local.PreferencesHelper
-import uni.matilde.lam01.data.remote.TokenManager
+import uni.matilde.lam01.data.TokenManager
 import uni.matilde.lam01.data.remote.models.AuthErrorResponse
 import uni.matilde.lam01.data.remote.models.AuthRequest
 import uni.matilde.lam01.data.remote.models.AuthResponse
@@ -66,30 +65,25 @@ class AuthRepository(
     }
 
     suspend fun getToken(username: String, password: String): Result<TokenResponse> {
-        // Controlla se esiste un token valido
-        val existingToken = TokenManager.getToken()
-        if (existingToken != null) {
-            val clientId = preferencesHelper.getClientId() // Recupera l'username
-            if (clientId == null) {
-                // L'username non è presente: errore
-                return Result.failure(Exception("client_id mancante: impossibile creare TokenResponse"))
-            }
-
+        if (!TokenManager.needsTokenRenewal()) {
             return Result.success(
-                TokenResponse(client_secret = existingToken, client_id = clientId)
+                TokenResponse(
+                    client_secret = TokenManager.getToken()!!,
+                    client_id = preferencesHelper.getClientId() ?: -1
+                )
             )
         }
 
-        // Effettua la richiesta al server solo se necessario
         return handleApiCall {
             val response = apiService.getToken(username, password)
             if (response.isSuccessful) {
                 response.body()?.let { tokenResponse ->
                     TokenManager.setToken(tokenResponse.client_secret)
+                    preferencesHelper.saveClientId(tokenResponse.client_id)
                     Result.success(tokenResponse)
-                } ?: Result.failure(Exception("Risposta vuota dal server"))
+                } ?: Result.failure(Exception("Risposta vuota"))
             } else {
-                Result.failure(Exception("Errore: ${response.errorBody()?.string()}"))
+                Result.failure(Exception("Errore durante il login: ${response.errorBody()?.string()}"))
             }
         }
     }
