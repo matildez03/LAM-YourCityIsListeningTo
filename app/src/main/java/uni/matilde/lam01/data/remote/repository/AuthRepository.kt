@@ -16,7 +16,8 @@ import uni.matilde.lam01.ui.map.TokenExpiredException
 
 class AuthRepository(
     private val apiService: ApiService,
-    private val preferencesHelper: PreferencesHelper
+    private val preferencesHelper: PreferencesHelper,
+    private val tokenManager: TokenManager
 ) {
 
     // Singleton pattern
@@ -24,10 +25,14 @@ class AuthRepository(
         @Volatile
         private var instance: AuthRepository? = null
 
-        fun getInstance(preferencesHelper: PreferencesHelper): AuthRepository {
+        fun getInstance(
+            preferencesHelper: PreferencesHelper,
+            tokenManager: TokenManager
+        ): AuthRepository {
             return instance ?: synchronized(this) {
                 instance ?: AuthRepository(
                     apiService = RetrofitInstance.api, // Usa RetrofitInstance.api
+                    tokenManager = tokenManager,
                     preferencesHelper = preferencesHelper
                 ).also { instance = it }
             }
@@ -37,7 +42,7 @@ class AuthRepository(
     suspend fun <T> executeAuthenticatedRequest(
         request: suspend (String) -> T
     ): T {
-        val token = TokenManager.getToken() ?: throw TokenExpiredException()
+        val token = tokenManager.getToken() ?: throw TokenExpiredException()
         return request(token)
     }
 
@@ -65,25 +70,32 @@ class AuthRepository(
     }
 
     suspend fun getToken(username: String, password: String): Result<TokenResponse> {
-        if (!TokenManager.needsTokenRenewal()) {
+        if (!tokenManager.needsTokenRenewal()) {
             return Result.success(
                 TokenResponse(
-                    client_secret = TokenManager.getToken()!!,
+                    client_secret = tokenManager.getToken()!!,
                     client_id = preferencesHelper.getClientId() ?: -1
                 )
             )
         }
-
+        //else:
         return handleApiCall {
             val response = apiService.getToken(username, password)
             if (response.isSuccessful) {
                 response.body()?.let { tokenResponse ->
-                    TokenManager.setToken(tokenResponse.client_secret)
+                    tokenManager.setToken(tokenResponse.client_secret)
+                    preferencesHelper.saveToken(tokenResponse.client_secret)
                     preferencesHelper.saveClientId(tokenResponse.client_id)
                     Result.success(tokenResponse)
                 } ?: Result.failure(Exception("Risposta vuota"))
             } else {
-                Result.failure(Exception("Errore durante il login: ${response.errorBody()?.string()}"))
+                Result.failure(
+                    Exception(
+                        "Errore durante il login: ${
+                            response.errorBody()?.string()
+                        }"
+                    )
+                )
             }
         }
     }
@@ -91,8 +103,23 @@ class AuthRepository(
     suspend fun deleteAccount(): Result<DeleteAccountResponse> {
         return handleApiCall {
             executeAuthenticatedRequest { token ->
-                val response = apiService.deleteAccount(token)
-                response.toResult()
+                Log.d("Delete", "Token utilizzato: $token")
+                val response = apiService.deleteAccount("Bearer $token")
+                if (response.isSuccessful) {
+                    preferencesHelper.clearPreferences() // Pulisce le preferenze
+                    response.body()?.let {
+                        Log.d("Delete", "Account eliminato con successo: ${it.toString()}")
+                        Result.success(it)
+                    } ?: run {
+                        Log.e("Delete", "Risposta vuota durante l'eliminazione dell'account")
+                        Result.failure(Exception("Risposta vuota"))
+                    }
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    val errorMessage = "Errore durante l'eliminazione dell'account: ${response.code()} - ${errorBody ?: "Messaggio sconosciuto"}"
+                    Log.e("Delete", errorMessage)
+                    Result.failure(Exception(errorMessage))
+                }
             }
         }
     }

@@ -81,14 +81,6 @@ class AuthViewModel(
         }
     }
 
-    fun getToken(): String? {
-        return TokenManager.getToken()
-    }
-
-    fun isTokenValid(): Boolean {
-        return !TokenManager.needsTokenRenewal()
-    }
-
     // Funzione per reimpostare lo stato (opzionale)
     fun resetAuthState() {
         _authState.value = null

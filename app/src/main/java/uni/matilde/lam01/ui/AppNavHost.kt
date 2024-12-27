@@ -19,7 +19,7 @@ fun AppNavHost(
     val navController = rememberNavController()
 
     // Ottieni l'istanza di AuthViewModel
-    val authViewModelFactory = AuthViewModelFactory(App.instance.authRepository)
+    val authViewModelFactory = AuthViewModelFactory(App.instance.authRepository, App.instance.preferencesHelper)
     val authViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
         modelClass = AuthViewModel::class.java,
         factory = authViewModelFactory
@@ -37,7 +37,7 @@ fun AppNavHost(
                         popUpTo("auth") { inclusive = true }
                     }
                 },
-                factory = AuthViewModelFactory(App.instance.authRepository) // Crea l'istanza della factory
+                factory = AuthViewModelFactory(App.instance.authRepository, App.instance.preferencesHelper) // Crea l'istanza della factory
             )
         }
         composable("map") { //la schermata principale è direttamente la mappa

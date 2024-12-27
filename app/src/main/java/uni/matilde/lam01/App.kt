@@ -13,18 +13,18 @@ class App : Application() {
     lateinit var authRepository: AuthRepository
         private set
 
+    lateinit var tokenManager: TokenManager
+        private set
+
     override fun onCreate() {
         super.onCreate()
         instance = this
-
         // Inizializza PreferencesHelper
         preferencesHelper = PreferencesHelper(this)
-
-        // Inizializza AuthRepository
-        authRepository = AuthRepository.getInstance(preferencesHelper)
-
         // Inizializza TokenManager
-        TokenManager.initialize(preferencesHelper)
+        tokenManager = TokenManager(preferencesHelper)
+        // Inizializza AuthRepository
+        authRepository = AuthRepository.getInstance(preferencesHelper, tokenManager)
 
     }
 

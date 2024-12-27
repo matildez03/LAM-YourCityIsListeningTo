@@ -4,17 +4,18 @@ import kotlinx.coroutines.*
 import uni.matilde.lam01.data.local.PreferencesHelper
 
 
-object TokenManager {
+class TokenManager(private val preferencesHelper: PreferencesHelper) {
 
     private var token: String? = null
     private var expirationTime: Long? = null
     private var timerJob: Job? = null
 
-    private lateinit var preferencesHelper: PreferencesHelper
+    init {
+        initialize()
+    }
 
-    // Inizializza il TokenManager
-    fun initialize(preferencesHelper: PreferencesHelper) {
-        this.preferencesHelper = preferencesHelper
+    // Inizializza il TokenManager con i dati salvati
+    private fun initialize() {
         token = preferencesHelper.getToken()
         expirationTime = preferencesHelper.getTokenExpirationTime()
         if (isTokenExpired()) {
@@ -65,4 +66,5 @@ object TokenManager {
 
     // Controlla se il token ha bisogno di essere rinnovato: è scaduto o non è stato impostato
     fun needsTokenRenewal(): Boolean = isTokenExpired() || token == null
+
 }

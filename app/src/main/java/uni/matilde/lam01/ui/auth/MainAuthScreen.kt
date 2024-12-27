@@ -32,7 +32,16 @@ fun MainAuthScreen(
                 authViewModel.resetState() // Resetta lo stato per evitare loop
             }
         }
-        else -> { /* Altri stati, come caricamento o inattivo */ }
+        is AuthState.Success<*> -> {
+            if ((authState as AuthState.Success<String>).data == "Account eliminato con successo.") {
+                navController.navigate("login") {
+                    popUpTo("login") { inclusive = true } // Torna alla schermata login
+                }
+                authViewModel.resetState() // Resetta lo stato per evitare loop
+            }
+        }
+        else -> { //TODO: eventuale gestione di altri stati
+        }
     }
 
     NavHost(

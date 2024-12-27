@@ -20,8 +20,8 @@ interface ApiService {
     ): Response<TokenResponse>
 
 
-    @DELETE("/auth/unsubscribe")
-    suspend fun deleteAccount(@Header("Authorization") token: String): Response<DeleteAccountResponse>
+    @DELETE("auth/unsubscribe")
+    suspend fun deleteAccount(@Header("Authentication") token: String): Response<DeleteAccountResponse>
 
     @GET("audio/all")
     suspend fun getAllSongs(): Response<List<AudioEntity>>
