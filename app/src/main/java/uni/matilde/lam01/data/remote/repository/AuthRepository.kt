@@ -101,10 +101,13 @@ class AuthRepository(
     }
 
     suspend fun deleteAccount(): Result<DeleteAccountResponse> {
+        //TODO: aggiungi rimozione di dati e brani caricati dall'utente
         return handleApiCall {
             executeAuthenticatedRequest { token ->
                 Log.d("Delete", "Token utilizzato: $token")
-                val response = apiService.deleteAccount("Bearer $token")
+                val btoken = "Bearer $token"
+                val response = apiService.deleteAccount(btoken)
+                Log.d("Delete", "Richiesta inviata con token $btoken")
                 if (response.isSuccessful) {
                     preferencesHelper.clearPreferences() // Pulisce le preferenze
                     response.body()?.let {
