@@ -71,7 +71,6 @@ class AuthViewModel(
                 if (response.isSuccess) {
                     _authState.value = AuthState.Success("Account eliminato con successo.")
                     Log.d("Delete","Account eliminato con successo.");
-
                 } else {
                     _authState.value = AuthState.Error("Errore durante l'eliminazione dell'account.")
                 }

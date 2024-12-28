@@ -48,7 +48,7 @@ class TokenManager(private val preferencesHelper: PreferencesHelper) {
     }
 
     // Cancella il token
-    private fun clearToken() {
+    fun clearToken() {
         token = null
         expirationTime = null
         timerJob?.cancel()

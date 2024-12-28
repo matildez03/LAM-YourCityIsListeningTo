@@ -7,7 +7,8 @@ import androidx.navigation.compose.rememberNavController
 import uni.matilde.lam01.App
 import uni.matilde.lam01.ui.auth.AuthViewModel
 import uni.matilde.lam01.ui.auth.AuthViewModelFactory
-import uni.matilde.lam01.ui.auth.MainAuthScreen
+import uni.matilde.lam01.ui.auth.LoginScreen
+import uni.matilde.lam01.ui.auth.SignUpScreen
 import uni.matilde.lam01.ui.map.MainMapScreen
 
 @Composable
@@ -19,7 +20,8 @@ fun AppNavHost(
     val navController = rememberNavController()
 
     // Ottieni l'istanza di AuthViewModel
-    val authViewModelFactory = AuthViewModelFactory(App.instance.authRepository, App.instance.preferencesHelper)
+    val authViewModelFactory =
+        AuthViewModelFactory(App.instance.authRepository, App.instance.preferencesHelper)
     val authViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
         modelClass = AuthViewModel::class.java,
         factory = authViewModelFactory
@@ -28,20 +30,28 @@ fun AppNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = if (isAuthenticated) "map" else "auth"
+        startDestination = if (isAuthenticated) "map" else "login"
     ) {
-        composable("auth") {
-            MainAuthScreen(
+        composable("login") {
+            LoginScreen(
+                navigateToSignUp = { navController.navigate("signup") },
                 navigateToHome = {
                     navController.navigate("map") {
                         popUpTo("auth") { inclusive = true }
                     }
                 },
-                factory = AuthViewModelFactory(App.instance.authRepository, App.instance.preferencesHelper) // Crea l'istanza della factory
+                factory = authViewModelFactory // Passa la factory alla LoginScreen
+            )
+        }
+
+        composable("signup"){
+            SignUpScreen(
+                navigateToLogin = { navController.navigate("login") },
+                factory = authViewModelFactory // Passa la factory alla SignUpScreen
             )
         }
         composable("map") { //la schermata principale è direttamente la mappa
-            MainMapScreen(navController = navController, authViewModel = authViewModel )
+            MainMapScreen(navController = navController, authViewModel = authViewModel)
         }
 
         composable("audios") {

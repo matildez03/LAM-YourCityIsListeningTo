@@ -156,6 +156,10 @@ fun DrawerContent(navController: NavController, onClose: () -> Unit, authViewMod
                     showDeleteDialog = false
                     Log.d("Delete","click avvenuto sul tasto di eliminazione")
                     authViewModel.deleteAccount() // Azione di eliminazione account
+                    //se non ci sono eccezioni
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true } // Ripulisce lo stack di navigazione
+                    }
                 }) {
                     Text("Conferma")
                 }

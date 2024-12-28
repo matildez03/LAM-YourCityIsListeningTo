@@ -110,6 +110,7 @@ class AuthRepository(
                 Log.d("Delete", "Richiesta inviata con token $btoken")
                 if (response.isSuccessful) {
                     preferencesHelper.clearPreferences() // Pulisce le preferenze
+                    tokenManager.clearToken()
                     response.body()?.let {
                         Log.d("Delete", "Account eliminato con successo: ${it.toString()}")
                         Result.success(it)
