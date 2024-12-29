@@ -37,7 +37,7 @@ fun AppNavHost(
                 navigateToSignUp = { navController.navigate("signup") },
                 navigateToHome = {
                     navController.navigate("map") {
-                        popUpTo("auth") { inclusive = true }
+                        popUpTo("login") { inclusive = true }
                     }
                 },
                 factory = authViewModelFactory // Passa la factory alla LoginScreen

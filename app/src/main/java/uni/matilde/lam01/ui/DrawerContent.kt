@@ -70,7 +70,9 @@ fun DrawerContent(navController: NavController, onClose: () -> Unit, authViewMod
         HorizontalDivider()
 
         DrawerItem("Map", Icons.Default.Home, onClick = {
-            navController.navigate("map")
+            if (navController.currentDestination?.route != "map") {
+                navController.navigate("map")
+            }
             onClose()
         })
 
@@ -130,8 +132,8 @@ fun DrawerContent(navController: NavController, onClose: () -> Unit, authViewMod
                 TextButton(onClick = {
                     showLogoutDialog = false
                     onClose() // Chiudi il drawer
-                    navController.navigate("auth") {
-                        popUpTo("map") { inclusive = true } // Ripulisce lo stack di navigazione
+                    navController.navigate("login") {
+                        popUpTo("login") { inclusive = true } // Ripulisce lo stack di navigazione
                     }
                 }) {
                     Text("Conferma")
@@ -158,7 +160,7 @@ fun DrawerContent(navController: NavController, onClose: () -> Unit, authViewMod
                     authViewModel.deleteAccount() // Azione di eliminazione account
                     //se non ci sono eccezioni
                     navController.navigate("login") {
-                        popUpTo(0) { inclusive = true } // Ripulisce lo stack di navigazione
+                        popUpTo("login") { inclusive = true } // Ripulisce lo stack di navigazione
                     }
                 }) {
                     Text("Conferma")
