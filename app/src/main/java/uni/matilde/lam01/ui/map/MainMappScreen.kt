@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import uni.matilde.lam01.data.remote.repository.AuthRepository
 import uni.matilde.lam01.ui.DrawerContent
+import uni.matilde.lam01.ui.audio.AudioRecordingDialog
 import uni.matilde.lam01.ui.auth.AuthViewModel
 
 
@@ -53,7 +54,7 @@ fun MainMapScreen(
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val mapUiSettings = remember { MapUiSettings(myLocationButtonEnabled = true) }
     val mapProperties = remember { MapProperties(isMyLocationEnabled = true) }
-
+    var showRecordingDialog by remember { mutableStateOf(false) } // Stato per il popup
 
 
 
@@ -117,6 +118,8 @@ fun MainMapScreen(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
 
+
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         gesturesEnabled = false, // Disabilita l'apertura tramite gesture
@@ -172,14 +175,17 @@ fun MainMapScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
-                    onClick = { //TODO
-                    },
+                    onClick = { showRecordingDialog = true },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
-                    Text("Aggiungi Marker")
+                    Text("Aggiungi una registrazione")
                 }
+            }
+            // Popup di registrazione
+            if (showRecordingDialog) {
+                AudioRecordingDialog(onDismiss = { showRecordingDialog = false })
             }
         }
     }
