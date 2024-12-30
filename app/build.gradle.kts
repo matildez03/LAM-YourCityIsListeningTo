@@ -84,6 +84,7 @@ dependencies {
 
     // Kotlin Coroutines with Compose
     implementation("androidx.lifecycle:lifecycle-runtime-compose")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 
 
     // Debug e Test Compose

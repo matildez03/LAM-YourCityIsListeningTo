@@ -3,6 +3,7 @@ package uni.matilde.lam01.ui.map
 import android.Manifest
 import android.content.pm.PackageManager
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -32,6 +33,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import uni.matilde.lam01.data.remote.repository.AuthRepository
 import uni.matilde.lam01.ui.DrawerContent
@@ -39,32 +44,37 @@ import uni.matilde.lam01.ui.auth.AuthViewModel
 
 
 @Composable
-fun MainMapScreen(viewModel: MapViewModel = viewModel(), authViewModel: AuthViewModel, navController: NavController) {
+fun MainMapScreen(
+    viewModel: MapViewModel = viewModel(),
+    authViewModel: AuthViewModel,
+    navController: NavController
+) {
     val context = LocalContext.current
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    val mapUiSettings = remember { MapUiSettings(myLocationButtonEnabled = true) }
+    val mapProperties = remember { MapProperties(isMyLocationEnabled = true) }
 
-    // Gestione dei permessi di posizione
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted ->
-            if (isGranted) {
-                viewModel.updateUserLocation(
-                    LatLng(
-                        44.4949,
-                        11.3426
-                    )
-                ) // Posizione iniziale se il permesso è concesso
-            }
-        }
-    )
+
+
 
     LaunchedEffect(Unit) {
         if (ActivityCompat.checkSelfPermission(
                 context,
                 Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            ) == PackageManager.PERMISSION_GRANTED
+        ) { //accede alla posizione dell'utente
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                if (location != null) {
+                    viewModel.updateUserLocation(LatLng(location.latitude, location.longitude))
+                } else {
+                    Log.w("MainMapScreen", "Posizione non disponibile. Usando il fallback.")
+                    Toast.makeText(context, "Posizione non disponibile. Usando il fallback.", Toast.LENGTH_SHORT).show()
+                    viewModel.updateUserLocation(LatLng(44.4949, 11.3426)) // Bologna
+                }
+            }
         } else {
+            Log.w("MainMapScreen", "Permesso per localizzazione non abilitato.")
+            Toast.makeText(context, "Abilita la localizzazione per migliorare l'esperienza.", Toast.LENGTH_LONG).show()
             viewModel.updateUserLocation(LatLng(44.4949, 11.3426)) // Posizione di default
         }
     }
@@ -82,8 +92,24 @@ fun MainMapScreen(viewModel: MapViewModel = viewModel(), authViewModel: AuthView
 
     // Aggiorna la posizione della fotocamera quando la posizione dell'utente cambia
     LaunchedEffect(userLocation) {
-        val position = userLocation ?: LatLng(44.4949, 11.3426) // Fallback a Bologna
-        cameraPositionState.position = CameraPosition.fromLatLngZoom(position, 12f)
+        userLocation?.let { position ->
+            cameraPositionState.move(
+                CameraUpdateFactory.newLatLngZoom(position, 12f)
+            )
+        }
+    }
+
+
+    //aggiorna i markers in base allo zoom
+    LaunchedEffect(cameraPositionState.position) {
+        snapshotFlow { cameraPositionState.position.zoom }
+            .distinctUntilChanged() // Aggiorna solo se il valore dello zoom cambia
+            .debounce(300) // Riduce gli aggiornamenti frequenti
+            .collect { zoomLevel ->
+                userLocation?.let { position ->
+                    viewModel.fetchMarkersForUserLocationAndZoom(position, zoomLevel)
+                }?: Log.w("MainMapScreen", "Posizione non disponibile.")
+            }
     }
 
 
@@ -97,7 +123,8 @@ fun MainMapScreen(viewModel: MapViewModel = viewModel(), authViewModel: AuthView
         drawerContent = {
             DrawerContent(
                 navController,
-                onClose = { scope.launch { drawerState.close() }
+                onClose = {
+                    scope.launch { drawerState.close() }
                 },
                 authViewModel = authViewModel
             )
@@ -111,9 +138,9 @@ fun MainMapScreen(viewModel: MapViewModel = viewModel(), authViewModel: AuthView
                     navigationIcon = {
                         IconButton(onClick = {
                             scope.launch {
-                               drawerState.open()
+                                drawerState.open()
                             }
-                            Log.d("click event","Button di apertura menù cliccato")
+                            Log.d("click event", "Button di apertura menù cliccato")
                         }) {
                             Icon(Icons.Default.Menu, contentDescription = "Apri Menù")
                         }
@@ -128,7 +155,9 @@ fun MainMapScreen(viewModel: MapViewModel = viewModel(), authViewModel: AuthView
             ) {
                 GoogleMap(
                     modifier = Modifier.weight(1f),
-                    cameraPositionState = cameraPositionState
+                    cameraPositionState = cameraPositionState,
+                    uiSettings = mapUiSettings,
+                    properties = mapProperties
                 ) {
                     // Aggiunge marker sulla mappa
                     markers.forEach { marker ->
@@ -143,12 +172,13 @@ fun MainMapScreen(viewModel: MapViewModel = viewModel(), authViewModel: AuthView
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
-                    onClick = { viewModel.fetchMarkers() },
+                    onClick = { //TODO
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
-                    Text("Aggiorna Marker")
+                    Text("Aggiungi Marker")
                 }
             }
         }

@@ -25,20 +25,38 @@ class MapViewModel : ViewModel() {
     private val _markers = MutableLiveData<List<MapMarker>>()
     val markers: LiveData<List<MapMarker>> get() = _markers
 
-    init {
-        fetchMarkers() // Carica i marker iniziali
-    }
 
-    fun fetchMarkers() {
+    // Funzione per caricare i marker vicini alla posizione dell'utente
+    fun fetchMarkersForUserLocation(userLocation: LatLng) {
         viewModelScope.launch {
-            // Simula il caricamento dei marker (puoi sostituire con una chiamata al repository)
-            val markerList = listOf(
-                MapMarker(LatLng(44.4949, 11.3426), "Canzone 1", "Descrizione della canzone 1"),
-                MapMarker(LatLng(45.4642, 9.1900), "Canzone 2", "Descrizione della canzone 2")
+            // Simula il caricamento dei marker vicini alla posizione dell'utente
+            val nearbyMarkers = listOf(
+                MapMarker(LatLng(userLocation.latitude + 0.01, userLocation.longitude + 0.01), "Brano 1", "Descrizione 1"),
+                MapMarker(LatLng(userLocation.latitude - 0.01, userLocation.longitude - 0.01), "Brano 2", "Descrizione 2"),
+                MapMarker(LatLng(userLocation.latitude + 0.02, userLocation.longitude + 0.02), "Brano 3", "Descrizione 3")
             )
-            _markers.postValue(markerList) // Aggiorna il valore di LiveData
+            _markers.postValue(nearbyMarkers) // Aggiorna i marker in base alla posizione
         }
     }
+
+    fun fetchMarkersForUserLocationAndZoom(userLocation: LatLng, zoomLevel: Float) {
+        viewModelScope.launch {
+            // Simula marker diversi in base al livello di zoom
+            val filteredMarkers = if (zoomLevel > 15) {
+                listOf(
+                    MapMarker(LatLng(userLocation.latitude + 0.001, userLocation.longitude + 0.001), "Dettaglio 1", "Zoom alto"),
+                    MapMarker(LatLng(userLocation.latitude - 0.001, userLocation.longitude - 0.001), "Dettaglio 2", "Zoom alto")
+                )
+            } else {
+                listOf(
+                    MapMarker(LatLng(userLocation.latitude + 0.01, userLocation.longitude + 0.01), "Brano 1", "Zoom basso"),
+                    MapMarker(LatLng(userLocation.latitude - 0.01, userLocation.longitude - 0.01), "Brano 2", "Zoom basso")
+                )
+            }
+            _markers.postValue(filteredMarkers)
+        }
+    }
+
 
     fun updateUserLocation(location: LatLng) {
         _userLocation.postValue(location) // Aggiorna il valore della posizione utente
