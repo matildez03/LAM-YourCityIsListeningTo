@@ -1,25 +1,109 @@
 package uni.matilde.lam01.data.remote.repository
 
+import android.util.Log
+import okhttp3.MultipartBody
+import uni.matilde.lam01.api.ApiService
 import uni.matilde.lam01.api.RetrofitInstance
+import uni.matilde.lam01.data.TokenManager
 import uni.matilde.lam01.data.local.AudioDao
 import uni.matilde.lam01.data.local.AudioEntity
+import retrofit2.Response
+import uni.matilde.lam01.data.remote.models.UploadAudioResponse
 
 
-class AudioRepository(private val audioDao: AudioDao) {
+class AudioRepository(private val apiService: ApiService,
+                      private val tokenManager: TokenManager,
+                      private val audioDao: AudioDao) {
+
+    // Singleton pattern
+    companion object {
+        @Volatile
+        private var instance: AudioRepository? = null
+
+        fun getInstance(
+            apiService: ApiService,
+            tokenManager: TokenManager,
+            audioDao: AudioDao
+        ): AudioRepository {
+            return instance ?: synchronized(this) {
+                instance ?: AudioRepository(apiService, tokenManager, audioDao).also { instance = it }
+            }
+        }
+    }
+
+
+    suspend fun uploadAudio(
+        longitude: Double,
+        latitude: Double,
+        file: MultipartBody.Part
+    ): Result<UploadAudioResponse> {
+        return handleApiCall {
+            executeAuthenticatedRequest { token ->
+                val response = apiService.uploadAudio(
+                    token = "Bearer $token",
+                    longitude = longitude,
+                    latitude = latitude,
+                    file = file
+                )
+                handleRetrofitResponse(response)
+            }
+        }
+    }
 
     suspend fun saveAudioLocally(audio: AudioEntity) {
-        audioDao.insert(audio)
+        try {
+            audioDao.insert(audio)
+        } catch (e: Exception) {
+            Log.e("AudioRepository", "Errore nel salvataggio locale: ${e.message}")
+        }
     }
 
-    suspend fun getAllLocalAudios(): List<AudioEntity> {
-        return audioDao.getAll()
+    suspend fun getAllLocalAudios(): Result<List<AudioEntity>> {
+        return try {
+            Result.success(audioDao.getAll())
+        } catch (e: Exception) {
+            Log.e("AudioRepository", "Errore nel recupero dei dati locali: ${e.message}")
+            Result.failure(e)
+        }
     }
-    suspend fun getAllRemoteAudios(): List<AudioEntity> {
-        val response = RetrofitInstance.api.getAllSongs()
+
+    suspend fun getAllRemoteAudios(): Result<List<AudioEntity>> {
+        return handleApiCall {
+            val response = apiService.getAllSongs()
+            handleRetrofitResponse(response)
+        }
+    }
+
+    /**
+     * Funzione generica per gestire le chiamate API
+     */
+    private suspend fun <T> handleApiCall(apiCall: suspend () -> Result<T>): Result<T> {
+        return try {
+            apiCall()
+        } catch (e: Exception) {
+            Log.e("AudioRepository", "Errore durante la chiamata API: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Esegue una richiesta autenticata recuperando il token dal TokenManager.
+     */
+    private suspend fun <T> executeAuthenticatedRequest(request: suspend (String) -> Result<T>): Result<T> {
+        val token = tokenManager.getToken() ?: return Result.failure(Exception("Token scaduto o non disponibile"))
+        return request(token)
+    }
+
+
+    /**
+     * Funzione generica per convertire una risposta Retrofit in un oggetto Result
+     */
+    private inline fun <T> handleRetrofitResponse(response: Response<T>): Result<T> {
         return if (response.isSuccessful) {
-            response.body() ?: emptyList()
+            response.body()?.let { Result.success(it) } ?: Result.failure(Exception("Risposta vuota"))
         } else {
-            throw Exception("Errore nella chiamata API: ${response.code()}")
+            val errorBody = response.errorBody()?.string()
+            Result.failure(Exception("Errore API: ${response.code()} - $errorBody"))
         }
     }
 }

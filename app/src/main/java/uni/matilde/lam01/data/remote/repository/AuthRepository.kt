@@ -27,11 +27,12 @@ class AuthRepository(
 
         fun getInstance(
             preferencesHelper: PreferencesHelper,
-            tokenManager: TokenManager
+            tokenManager: TokenManager,
+            apiService: ApiService
         ): AuthRepository {
             return instance ?: synchronized(this) {
                 instance ?: AuthRepository(
-                    apiService = RetrofitInstance.api, // Usa RetrofitInstance.api
+                    apiService = apiService,
                     tokenManager = tokenManager,
                     preferencesHelper = preferencesHelper
                 ).also { instance = it }

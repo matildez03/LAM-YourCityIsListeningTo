@@ -8,6 +8,8 @@ import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import uni.matilde.lam01.ui.audio.AudioViewModel
+import java.io.File
 
 data class MapMarker(
     val position: LatLng,
@@ -61,4 +63,5 @@ class MapViewModel : ViewModel() {
     fun updateUserLocation(location: LatLng) {
         _userLocation.postValue(location) // Aggiorna il valore della posizione utente
     }
+
 }

@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 import uni.matilde.lam01.data.remote.repository.AuthRepository
 import uni.matilde.lam01.ui.DrawerContent
 import uni.matilde.lam01.ui.audio.AudioRecordingDialog
+import uni.matilde.lam01.ui.audio.AudioViewModel
 import uni.matilde.lam01.ui.auth.AuthViewModel
 
 
@@ -48,13 +49,18 @@ import uni.matilde.lam01.ui.auth.AuthViewModel
 fun MainMapScreen(
     viewModel: MapViewModel = viewModel(),
     authViewModel: AuthViewModel,
+    audioViewModel: AudioViewModel,
     navController: NavController
 ) {
+
+
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val mapUiSettings = remember { MapUiSettings(myLocationButtonEnabled = true) }
     val mapProperties = remember { MapProperties(isMyLocationEnabled = true) }
     var showRecordingDialog by remember { mutableStateOf(false) } // Stato per il popup
+
+
 
 
 
@@ -185,7 +191,10 @@ fun MainMapScreen(
             }
             // Popup di registrazione
             if (showRecordingDialog) {
-                AudioRecordingDialog(onDismiss = { showRecordingDialog = false })
+                userLocation?.let { AudioRecordingDialog(onDismiss = {
+                    showRecordingDialog = false
+                    audioViewModel.clearUploadStatus() // Resetta lo stato dell'upload
+                }, userLocation = it, audioViewModel = audioViewModel) }
             }
         }
     }

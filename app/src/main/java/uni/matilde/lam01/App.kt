@@ -1,8 +1,11 @@
 package uni.matilde.lam01
 
 import android.app.Application
+import uni.matilde.lam01.api.RetrofitInstance
 import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.data.TokenManager
+import uni.matilde.lam01.data.local.AppDatabase
+import uni.matilde.lam01.data.remote.repository.AudioRepository
 import uni.matilde.lam01.data.remote.repository.AuthRepository
 
 class App : Application() {
@@ -13,7 +16,13 @@ class App : Application() {
     lateinit var authRepository: AuthRepository
         private set
 
+    lateinit var audioRepository: AudioRepository
+        private set
+
     lateinit var tokenManager: TokenManager
+        private set
+
+    lateinit var appDatabase: AppDatabase
         private set
 
     override fun onCreate() {
@@ -23,9 +32,18 @@ class App : Application() {
         preferencesHelper = PreferencesHelper(this)
         // Inizializza TokenManager
         tokenManager = TokenManager(preferencesHelper)
-        // Inizializza AuthRepository
-        authRepository = AuthRepository.getInstance(preferencesHelper, tokenManager)
 
+        // Inizializza il Database
+        appDatabase = AppDatabase.getDatabase(this)
+
+        // Inizializza AuthRepository
+        authRepository = AuthRepository.getInstance(preferencesHelper, tokenManager, RetrofitInstance.api)
+
+        audioRepository = AudioRepository.getInstance(
+            apiService = RetrofitInstance.api,
+            tokenManager = tokenManager,
+            audioDao = appDatabase.audioDao()
+        )
     }
 
     companion object {
