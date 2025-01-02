@@ -1,6 +1,7 @@
 package uni.matilde.lam01.ui.map
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.util.Log
 import android.widget.Toast
@@ -33,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import kotlinx.coroutines.flow.debounce
@@ -62,29 +64,39 @@ fun MainMapScreen(
 
 
 
+    // Stato per i permessi
+    val hasLocationPermission = remember { mutableStateOf(false) }
 
 
+    // Gestione dei permessi con ActivityResultLauncher
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            Toast.makeText(context, "Permesso concesso!", Toast.LENGTH_SHORT).show()
+            hasLocationPermission.value = true
+            enableLocation(fusedLocationClient, viewModel)
+        } else {
+            Toast.makeText(context, "Permesso negato. Usando il fallback.", Toast.LENGTH_LONG).show()
+            viewModel.updateUserLocation(LatLng(44.4949, 11.3426)) // Bologna come fallback
+        }
+    }
+
+
+    // Richiedi i permessi appena il composable viene avviato
     LaunchedEffect(Unit) {
         if (ActivityCompat.checkSelfPermission(
                 context,
                 Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        ) { //accede alla posizione dell'utente
-            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                if (location != null) {
-                    viewModel.updateUserLocation(LatLng(location.latitude, location.longitude))
-                } else {
-                    Log.w("MainMapScreen", "Posizione non disponibile. Usando il fallback.")
-                    Toast.makeText(context, "Posizione non disponibile. Usando il fallback.", Toast.LENGTH_SHORT).show()
-                    viewModel.updateUserLocation(LatLng(44.4949, 11.3426)) // Bologna
-                }
-            }
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         } else {
-            Log.w("MainMapScreen", "Permesso per localizzazione non abilitato.")
-            Toast.makeText(context, "Abilita la localizzazione per migliorare l'esperienza.", Toast.LENGTH_LONG).show()
-            viewModel.updateUserLocation(LatLng(44.4949, 11.3426)) // Posizione di default
+            hasLocationPermission.value = true
+            enableLocation(fusedLocationClient, viewModel)
         }
     }
+
 
     // Osserva i dati LiveData
     val userLocation by viewModel.userLocation.observeAsState()
@@ -196,6 +208,17 @@ fun MainMapScreen(
                     audioViewModel.clearUploadStatus() // Resetta lo stato dell'upload
                 }, userLocation = it, audioViewModel = audioViewModel) }
             }
+        }
+    }
+}
+@SuppressLint("MissingPermission")
+fun enableLocation(fusedLocationClient: FusedLocationProviderClient, viewModel: MapViewModel) {
+    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+        if (location != null) {
+            viewModel.updateUserLocation(LatLng(location.latitude, location.longitude))
+        } else {
+            Log.w("MainMapScreen", "Posizione non disponibile. Usando il fallback.")
+            viewModel.updateUserLocation(LatLng(44.4949, 11.3426)) // Bologna come fallback
         }
     }
 }
