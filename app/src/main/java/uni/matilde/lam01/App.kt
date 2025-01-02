@@ -7,6 +7,7 @@ import uni.matilde.lam01.data.TokenManager
 import uni.matilde.lam01.data.local.AppDatabase
 import uni.matilde.lam01.data.remote.repository.AudioRepository
 import uni.matilde.lam01.data.remote.repository.AuthRepository
+import uni.matilde.lam01.util.recorder.AndroidAudioRecorder
 
 class App : Application() {
 
@@ -24,6 +25,7 @@ class App : Application() {
 
     lateinit var appDatabase: AppDatabase
         private set
+
 
     override fun onCreate() {
         super.onCreate()
@@ -44,6 +46,7 @@ class App : Application() {
             tokenManager = tokenManager,
             audioDao = appDatabase.audioDao()
         )
+
     }
 
     companion object {

@@ -37,6 +37,8 @@ fun AppNavHost(
     )
 
 
+
+
     NavHost(
         navController = navController,
         startDestination = if (isAuthenticated) "map" else "login"
