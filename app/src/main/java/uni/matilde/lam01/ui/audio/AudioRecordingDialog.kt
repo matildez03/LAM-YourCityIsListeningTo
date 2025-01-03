@@ -39,7 +39,9 @@ fun AudioRecordingDialog(
     audioViewModel: AudioViewModel
 ) {
     val context = LocalContext.current
-    var audioFile: File? = null
+    var audioFile by remember { mutableStateOf<File?>(null) }
+    var mp4FilePath = ""
+    var mp3FilePath = ""
     // Stati per la registrazione
     var isRecording by remember { mutableStateOf(false) }
     var decibelLevel by remember { mutableStateOf(0) }
@@ -67,9 +69,14 @@ fun AudioRecordingDialog(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val writeGranted = permissions[Manifest.permission.WRITE_EXTERNAL_STORAGE] == true
+        val readGranted = permissions[Manifest.permission.READ_EXTERNAL_STORAGE] == true
         val recordGranted = permissions[Manifest.permission.RECORD_AUDIO] == true
 
         if (!writeGranted) {
+            Log.e("AudioRecordingDialog", "Permesso per scrivere nella cache negato.")
+        }
+
+        if (!readGranted) {
             Log.e("AudioRecordingDialog", "Permesso per scrivere nella cache negato.")
         }
 
@@ -105,6 +112,7 @@ fun AudioRecordingDialog(
         requestPermissionLauncher.launch(
             arrayOf(
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.RECORD_AUDIO
             )
         )
@@ -114,10 +122,6 @@ fun AudioRecordingDialog(
 
     // Logica per aggiornare il livello del suono
     LaunchedEffect(isRecording) {
-        Log.d(
-            "AudioRecordingDialog",
-            "Stato di isrecording. Esiste: ${audioFile?.exists()}, Lunghezza: ${audioFile?.length()}"
-        )
         if (isRecording) {
             // Log del percorso della cache
             Log.d("AudioRecordingDialog", "Percorso della cache: ${context.cacheDir.absolutePath}")
@@ -142,55 +146,27 @@ fun AudioRecordingDialog(
                 }
             }
 
+
             //clearCache(context)
-            audioFile = File(context.cacheDir, "audio_temp.mp3")
+            audioFile = File(context.cacheDir, "audio_temp.mp4")
             try {
-                if (!audioFile!!.exists()) {
-                    val isCreated = audioFile!!.createNewFile()
-                    if (!isCreated) {
-                        Log.e("AudioRecordingDialog", "Impossibile creare il file.")
-                        Toast.makeText(
-                            context,
-                            "Errore nella creazione del file audio",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        return@LaunchedEffect
+                withContext(Dispatchers.IO) {
+                    if (!audioFile!!.exists()) {
+                        audioFile!!.createNewFile()
                     }
+                    recorder.startRecording(audioFile!!)
                 }
+
                 Log.d(
                     "AudioRecordingDialog",
                     "File creato: ${audioFile?.absolutePath}, Esiste: ${audioFile?.exists()}, Scrivibile: ${audioFile?.canWrite()}"
                 )
 
-                if (audioFile?.canWrite() == true) {
-                    recorder.startRecording(audioFile!!)
-                    Log.d(
-                        "AudioRecordingDialog",
-                        "Inizio registrazione su: ${audioFile?.absolutePath}"
-                    )
-                } else {
-                    Log.e("AudioRecordingDialog", "File non accessibile")
-                    Toast.makeText(
-                        context,
-                        "File non accessibile per la registrazione",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                Log.d(
+                    "AudioRecordingDialog",
+                    "Inizio registrazione su: ${audioFile?.absolutePath}"
+                )
 
-                    if (audioFile?.setWritable(true) == false) {
-                        Log.e(
-                            "AudioRecordingDialog",
-                            "Impossibile impostare il file come scrivibile."
-                        )
-                        Toast.makeText(
-                            context,
-                            "Errore nell'impostare i permessi del file.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        return@LaunchedEffect
-                    } else {
-                        Log.d("AudioRecordingDialog", "Scrittura su file forzata con successo")
-                    }
-                }
             } catch (e: IOException) {
                 Log.e("AudioRecordingDialog", "Errore nella creazione del file: ${e.message}")
                 Toast.makeText(context, "Errore nella creazione del file audio", Toast.LENGTH_SHORT)
@@ -202,29 +178,20 @@ fun AudioRecordingDialog(
          */
         else {
             //Log.d("AudioRecordingDialog", "Prima di interrompere: Esiste: ${audioFile?.exists()}, Lunghezza: ${audioFile?.length()}")
-            withContext(Dispatchers.IO) {
-                recorder.stop()
-            }
-            Log.d(
-                "AudioRecordingDialog",
-                "Fine registrazione. Esiste: ${audioFile?.exists()}, Lunghezza: ${audioFile?.length()}"
-            )
-            Log.d("AudioRecordingDialog", "Fine registrazione")
-            delay(500) // Aspetta mezzo secondo per garantire che il file sia scritto
-            audioFile.let {
-                if (it != null) {
-                    if (it.exists()) {
-                        Log.d(
-                            "AudioRecordingDialog",
-                            "Fine registrazione, Dimensioni file: ${it.length()} bytes"
-                        )
-                    } else {
-                        Log.e("AudioRecordingDialog", "Il file non esiste dopo la registrazione")
-                    }
-                } else {
-                    Log.e("AudioRecordingDialog", "Il file è null dopo la registrazione")
+            try {
+                withContext(Dispatchers.IO) {
+                    recorder.stop()
+                    delay(500) // Aspetta mezzo secondo per garantire la scrittura
                 }
-                Log.d("AudioRecordingDialog", "Dimensioni file: " + audioFile?.length())
+                Log.d(
+                    "AudioRecordingDialog",
+                    "Fine registrazione. Esiste: ${audioFile?.exists()}, Lunghezza: ${audioFile?.length()}"
+                )
+            } catch (e: IOException) {
+                Log.e(
+                    "AudioRecordingDialog",
+                    "Errore durante l'interruzione della registrazione: ${e.message}"
+                )
             }
         }
     }
@@ -249,19 +216,10 @@ fun AudioRecordingDialog(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Button(onClick = {
                     if (!hasAudioPermission) {
-                        requestPermissionLauncher.launch(
-                            arrayOf(
-                                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                                Manifest.permission.RECORD_AUDIO
-                            )
-                        )
+                        requestPermissionLauncher.launch(arrayOf(Manifest.permission.RECORD_AUDIO))
                         return@Button
                     }
-                    if (!isRecording) {
-                        isRecording = true
-                    } else {
-                        isRecording = false
-                    }
+                    isRecording = !isRecording
                 }) {
                     Text(if (isRecording) "Ferma Registrazione" else "Inizia Registrazione")
                 }
@@ -269,7 +227,8 @@ fun AudioRecordingDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(onClick = {
-                    if (isRecording) {
+
+                    if (isRecording == true) {
                         isRecording = false
                         Log.d(
                             "AudioRecordingDialog",
@@ -277,34 +236,39 @@ fun AudioRecordingDialog(
                         )
                     }
 
-                    try {
-                        if (audioFile == null) {
-                            Log.d(
-                                "AudioRecordingDialog",
-                                "File inesistente: ${audioFile?.absolutePath}"
-                            )
-                            return@Button
-                        } else {
-                            Log.d(
-                                "AudioRecordingDialog",
-                                "Esiste: ${audioFile?.exists()}, Lunghezza: ${audioFile?.length()}"
-                            )
-                            player.playFile(audioFile!!)
-                            Log.d(
-                                "AudioRecordingDialog",
-                                "Riproduzione del file: ${audioFile?.absolutePath}"
-                            )
+                    if (audioFile != null && audioFile!!.exists() && audioFile!!.length() > 0) {
+                        if (audioFile?.length() == 0L) {
+                            throw IOException("Il file audio è vuoto: ${audioFile?.absolutePath}")
                         }
-                    } catch (e: IOException) {
-                        Toast.makeText(
-                            context,
-                            "Errore durante la riproduzione del file audio",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        Log.e("AudioRecordingDialog", "Errore nel MediaPlayer: ${e.message}")
-                    } finally {
-                        player.stop()
+                        try {
+                            player.playFile(audioFile!!)
+                        } catch (e: IOException) {
+                            Toast.makeText(
+                                context,
+                                "Errore durante la riproduzione",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            Log.e("AudioRecordingDialog", "Errore riproduzione: ${e.message}")
+                        } catch (e: IllegalStateException) {
+                            Toast.makeText(
+                                context,
+                                "Errore durante l'inizializzazione del player",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            Log.e(
+                                "AudioRecordingDialog",
+                                "Errore stato del MediaPlayer: ${e.message}"
+                            )
+                        } finally {
+                            player.stop()
+                        }
+                    } else {
+                        Log.e("AudioRecordingDialog", "File audio vuoto o inesistente")
+
+                        Toast.makeText(context, "Nessun file disponibile", Toast.LENGTH_SHORT)
+                            .show()
                     }
+
                 }) {
                     Text("Riascolta")
                 }

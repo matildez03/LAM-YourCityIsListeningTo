@@ -49,8 +49,7 @@ class AndroidAudioRecorder(
         }
     }
 
-    override fun stop() {
-
+    override fun stop(){
         try {
             recorder?.apply {
                 stop()
