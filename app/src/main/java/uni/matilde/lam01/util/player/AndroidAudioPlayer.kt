@@ -15,7 +15,6 @@ class AndroidAudioPlayer(
     private var player: MediaPlayer? = null
 
     override fun playFile(file: File) {
-
         // Rilascia qualsiasi player esistente prima di crearne uno nuovo
         if (player != null) {
             try {
@@ -36,9 +35,6 @@ class AndroidAudioPlayer(
                 throw IOException("Il file non esiste o non è leggibile: ${file.absolutePath}")
             }
 
-            if (!file.canRead()) {
-                throw IOException("Il file non è leggibile: ${file.absolutePath}")
-            }
             //debug
             Log.d(
                 "AndroidAudioPlayer",
@@ -62,6 +58,7 @@ class AndroidAudioPlayer(
                 }
                 prepare() // Prepara il file per la riproduzione
                 start()
+                Log.d("AndroidAudioPlayer", "Riproduzione avviata.")
             }
         } catch (e: IOException) {
             Log.e(
@@ -75,16 +72,18 @@ class AndroidAudioPlayer(
         } catch (e: IllegalStateException) {
             Log.e("AndroidAudioPlayer", "Stato non valido del MediaPlayer: ${e.message}")
             throw RuntimeException("Stato non valido del MediaPlayer: ${e.message}", e)
-        } finally {
-            stop()
-            releasePlayer()
         }
     }
 
     override fun stop() {
         try {
-            player?.stop()
-        } catch (e: Exception) {
+            player?.let {
+                if (it.isPlaying) {
+                    it.stop()
+                    Log.d("AndroidAudioPlayer", "Riproduzione interrotta.")
+                }
+            }
+        }  catch (e: Exception) {
             Log.e("AndroidAudioPlayer", "Errore durante lo stop del MediaPlayer: ${e.message}")
         } finally {
             releasePlayer()
@@ -94,6 +93,8 @@ class AndroidAudioPlayer(
     private fun releasePlayer() {
         player?.release()
         player = null
+        Log.d("AndroidAudioPlayer", "MediaPlayer rilasciato.")
+
     }
 
 }
