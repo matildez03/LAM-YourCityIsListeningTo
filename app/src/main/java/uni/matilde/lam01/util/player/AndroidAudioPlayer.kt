@@ -76,6 +76,7 @@ class AndroidAudioPlayer(
             Log.e("AndroidAudioPlayer", "Stato non valido del MediaPlayer: ${e.message}")
             throw RuntimeException("Stato non valido del MediaPlayer: ${e.message}", e)
         } finally {
+            stop()
             releasePlayer()
         }
     }

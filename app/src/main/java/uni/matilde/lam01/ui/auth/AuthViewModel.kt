@@ -56,6 +56,7 @@ class AuthViewModel(
             // Gestione esplicita di successo ed errore
             if (result.isSuccess) {
                 _authState.value = AuthState.Success(result.getOrNull()!!)
+                preferencesHelper.saveUsername(username)
             } else {
                 _authState.value = AuthState.Error(result.exceptionOrNull()?.message)
             }

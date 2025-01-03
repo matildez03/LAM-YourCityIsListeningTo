@@ -111,6 +111,9 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 
 
+    //FFmpeg per convertitore mp3
+    implementation("com.arthenica:ffmpeg-kit-full:5.1.LTS")
+
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.6")
 

@@ -1,12 +1,8 @@
 package uni.matilde.lam01.ui.audio
 
-import android.media.AudioRecord
-import android.media.AudioFormat
-import android.media.MediaRecorder
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.media.MediaPlayer
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -26,20 +22,23 @@ import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.util.player.AndroidAudioPlayer
 import uni.matilde.lam01.util.recorder.AndroidAudioRecorder
+import uni.matilde.lam01.util.recorder.AudioRecorder
 import java.io.File
 import java.io.IOException
-import kotlin.math.log10
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.ReturnCode
 
 @Composable
 fun AudioRecordingDialog(
     onDismiss: () -> Unit,
     userLocation: LatLng,
-    audioViewModel: AudioViewModel
+    audioViewModel: AudioViewModel,
+    preferencesHelper: PreferencesHelper
 ) {
     val context = LocalContext.current
-    var audioFile by remember { mutableStateOf<File?>(null) }
     var mp4FilePath = ""
     var mp3FilePath = ""
     // Stati per la registrazione
@@ -117,82 +116,21 @@ fun AudioRecordingDialog(
             )
         )
 
+
     }
 
 
     // Logica per aggiornare il livello del suono
     LaunchedEffect(isRecording) {
         if (isRecording) {
-            // Log del percorso della cache
-            Log.d("AudioRecordingDialog", "Percorso della cache: ${context.cacheDir.absolutePath}")
-
-
-            // Assicuriamoci che la directory della cache esista
-            val cacheDir = context.cacheDir
-            if (!cacheDir.canWrite()) {
-                Log.e("AudioRecordingDialog", "La directory cache non è scrivibile.")
-            }
-
-            if (!context.cacheDir.exists()) {
-                val isDirCreated = context.cacheDir.mkdirs()
-                if (!isDirCreated) {
-                    Log.e("AudioRecordingDialog", "Impossibile creare la directory della cache")
-                    Toast.makeText(
-                        context,
-                        "Errore nella creazione della directory della cache",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return@LaunchedEffect
-                }
-            }
-
-
-            //clearCache(context)
-            audioFile = File(context.cacheDir, "audio_temp.mp4")
-            try {
-                withContext(Dispatchers.IO) {
-                    if (!audioFile!!.exists()) {
-                        audioFile!!.createNewFile()
-                    }
-                    recorder.startRecording(audioFile!!)
-                }
-
-                Log.d(
-                    "AudioRecordingDialog",
-                    "File creato: ${audioFile?.absolutePath}, Esiste: ${audioFile?.exists()}, Scrivibile: ${audioFile?.canWrite()}"
-                )
-
-                Log.d(
-                    "AudioRecordingDialog",
-                    "Inizio registrazione su: ${audioFile?.absolutePath}"
-                )
-
-            } catch (e: IOException) {
-                Log.e("AudioRecordingDialog", "Errore nella creazione del file: ${e.message}")
-                Toast.makeText(context, "Errore nella creazione del file audio", Toast.LENGTH_SHORT)
-                    .show()
-            }
+            //mostra dettagli decibel ecc
         }
         /*
         INTERRUZIONE REGISTRAZIONE
          */
         else {
             //Log.d("AudioRecordingDialog", "Prima di interrompere: Esiste: ${audioFile?.exists()}, Lunghezza: ${audioFile?.length()}")
-            try {
-                withContext(Dispatchers.IO) {
-                    recorder.stop()
-                    delay(500) // Aspetta mezzo secondo per garantire la scrittura
-                }
-                Log.d(
-                    "AudioRecordingDialog",
-                    "Fine registrazione. Esiste: ${audioFile?.exists()}, Lunghezza: ${audioFile?.length()}"
-                )
-            } catch (e: IOException) {
-                Log.e(
-                    "AudioRecordingDialog",
-                    "Errore durante l'interruzione della registrazione: ${e.message}"
-                )
-            }
+
         }
     }
 
@@ -214,61 +152,44 @@ fun AudioRecordingDialog(
         title = { Text("Registra e Riascolta") },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+                //INIZIA REGITRAZIONE
                 Button(onClick = {
                     if (!hasAudioPermission) {
                         requestPermissionLauncher.launch(arrayOf(Manifest.permission.RECORD_AUDIO))
                         return@Button
                     }
-                    isRecording = !isRecording
+                    val username = preferencesHelper.getUsername()
+                    mp4FilePath =
+                        context.filesDir.absolutePath + "/" + username + "_" + userLocation + ".mp4"
+                    startRecording(context, recorder, mp4FilePath)
+                    isRecording = true
+
                 }) {
-                    Text(if (isRecording) "Ferma Registrazione" else "Inizia Registrazione")
+                    Text("Inizia Registrazione")
+                }
+
+                //INTERROMPI REGISTRAZIONE
+                Button(onClick = {
+                    if (!hasAudioPermission) {
+                        requestPermissionLauncher.launch(arrayOf(Manifest.permission.RECORD_AUDIO))
+                        return@Button
+                    }
+                    val username = preferencesHelper.getUsername()
+                    // Convete il file mp4 in mp3
+                    mp3FilePath =
+                        context.filesDir.absolutePath + "/" + username + "_" + userLocation + ".mp3"
+                    stopRecording(context, recorder, mp4FilePath, mp3FilePath)
+
+                }) {
+                    Text("Ferma Registrazione")
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // RIASCOLTA
                 Button(onClick = {
-
-                    if (isRecording == true) {
-                        isRecording = false
-                        Log.d(
-                            "AudioRecordingDialog",
-                            "Interruzione registrazione. Esiste: ${audioFile?.exists()}, Lunghezza: ${audioFile?.length()}"
-                        )
-                    }
-
-                    if (audioFile != null && audioFile!!.exists() && audioFile!!.length() > 0) {
-                        if (audioFile?.length() == 0L) {
-                            throw IOException("Il file audio è vuoto: ${audioFile?.absolutePath}")
-                        }
-                        try {
-                            player.playFile(audioFile!!)
-                        } catch (e: IOException) {
-                            Toast.makeText(
-                                context,
-                                "Errore durante la riproduzione",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            Log.e("AudioRecordingDialog", "Errore riproduzione: ${e.message}")
-                        } catch (e: IllegalStateException) {
-                            Toast.makeText(
-                                context,
-                                "Errore durante l'inizializzazione del player",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            Log.e(
-                                "AudioRecordingDialog",
-                                "Errore stato del MediaPlayer: ${e.message}"
-                            )
-                        } finally {
-                            player.stop()
-                        }
-                    } else {
-                        Log.e("AudioRecordingDialog", "File audio vuoto o inesistente")
-
-                        Toast.makeText(context, "Nessun file disponibile", Toast.LENGTH_SHORT)
-                            .show()
-                    }
-
+                    playRecording(context, mp3FilePath, player)
                 }) {
                     Text("Riascolta")
                 }
@@ -276,35 +197,28 @@ fun AudioRecordingDialog(
             }
         },
         confirmButton = {
-            audioFile.let { file ->
-                Button(onClick = {
-                    audioViewModel.clearUploadStatus()
-                    userLocation?.let { location ->
-                        if (file != null) {
-                            audioViewModel.uploadAudio(
-                                file = file,
-                                latitude = location.latitude,
-                                longitude = location.longitude
-                            )
-                        }
-                        Log.d("AudioViewModel", "Caricamento dell'audio: ${file?.name}")
-
-                    } ?: run {
-                        Toast.makeText(
-                            context,
-                            "Posizione non disponibile, impossibile caricare l'audio",
-                            Toast.LENGTH_SHORT
-                        ).show()
+            Button(onClick = {
+                val file = File(mp3FilePath)
+                audioViewModel.clearUploadStatus()
+                userLocation?.let { location ->
+                    if (file != null) {
+                        audioViewModel.uploadAudio(
+                            file = file,
+                            latitude = location.latitude,
+                            longitude = location.longitude
+                        )
                     }
-                }) {
-                    Text("Conferma e Invia")
+                    Log.d("AudioViewModel", "Caricamento dell'audio: ${file?.name}")
+
+                } ?: run {
+                    Toast.makeText(
+                        context,
+                        "Posizione non disponibile, impossibile caricare l'audio",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
-            } ?: run {
-                Toast.makeText(
-                    context,
-                    "Nessun file disponibile per il caricamento",
-                    Toast.LENGTH_SHORT
-                ).show()
+            }) {
+                Text("Conferma e Invia")
             }
         },
         dismissButton = {
@@ -313,6 +227,114 @@ fun AudioRecordingDialog(
             }
         }
     )
+
+}
+
+fun startRecording(context: Context, recorder: AudioRecorder, mp4FilePath: String) {
+    Log.d("AudioRecordingDialog", "Percorso della cache: ${context.externalCacheDir?.absolutePath}")
+
+    // Assicuriamoci che la directory della cache esista e sia scrivibile
+    val cacheDir = context.externalCacheDir
+
+    if (cacheDir?.exists() == false) {
+        val isDirCreated = context.cacheDir.mkdirs()
+        if (!isDirCreated) {
+            Log.e("AudioRecordingDialog", "Impossibile creare la directory della cache")
+            Toast.makeText(
+                context,
+                "Errore nella creazione della directory della cache",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+    if (cacheDir?.canWrite() == true) {
+        Log.e("AudioRecordingDialog", "La directory cache non è scrivibile.")
+    }
+
+    try {
+        val mp4File = File(mp4FilePath)
+        Log.d(
+            "AudioRecordingDialog",
+            "File creato: ${mp4File.absolutePath}, Esiste: ${mp4File.exists()}, Scrivibile: ${mp4File.canWrite()}"
+        )
+        recorder.startRecording(mp4File)
+    } catch (e: Exception) {
+        Toast.makeText(context, "Errore nella registrazione: ${e.message}", Toast.LENGTH_LONG)
+            .show()
+        Log.e("AudioRecordingDialog", "Errore nella registrazione: ${e.message}")
+    }
+}
+
+fun stopRecording(
+    context: Context,
+    recorder: AudioRecorder,
+    mp4FilePath: String,
+    mp3FilePath: String
+) {
+
+    try {
+        recorder.stop()
+    } catch (e: IOException) {
+        e.printStackTrace()
+    }
+
+    val ffmpegCommand = "-i $mp4FilePath -codec:a libmp3lame -qscale:a 2 $mp3FilePath"
+
+
+    FFmpegKit.executeAsync(ffmpegCommand) { session ->
+        val returnCode = session.returnCode
+        if (ReturnCode.isSuccess(returnCode)) {
+            Log.d("FFmpegKit", "Conversion to MP3 succeeded.")
+
+            val mp4File = File(mp4FilePath)
+            if (mp4File.exists()) {
+                val deleted = mp4File.delete()
+                if (deleted) {
+                    Log.d("File Deletion", "MP4 file deleted successfully.")
+                } else {
+                    Log.d("File Deletion", "Failed to delete MP4 file.")
+                }
+            }
+        } else if (ReturnCode.isCancel(returnCode)) {
+            Log.d("FFmpegKit", "Conversion to MP3 was canceled by the user.")
+        } else {
+            val failStackTrace = session.failStackTrace ?: "Unknown error"
+            Log.e(
+                "FFmpegKit",
+                "Conversion to MP3 failed. Return code: $returnCode. Details: $failStackTrace"
+            )
+
+            Toast.makeText(context, "C'è stato un errore!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+}
+
+fun playRecording(context: Context, mp3FilePath: String, player: AndroidAudioPlayer) {
+    val audioFile = File(mp3FilePath)
+
+    if (audioFile.exists() && audioFile.length() > 0) {
+        if (audioFile.length() == 0L) {
+            throw IOException("Il file audio è vuoto: ${audioFile.absolutePath}")
+        }
+        try {
+            player.playFile(audioFile)
+        } catch (e: Exception) {
+            Toast.makeText(
+                context,
+                "Errore durante la riproduzione",
+                Toast.LENGTH_SHORT
+            ).show()
+            Log.e("AudioRecordingDialog", "Errore riproduzione: ${e.message}")
+        }
+        //eccezioni e finally gestito all'interno della classe AndroidAudioPlayer.kt
+    } else {
+        Log.e("AudioRecordingDialog", "File audio vuoto o inesistente")
+
+        Toast.makeText(context, "Nessun file disponibile", Toast.LENGTH_SHORT)
+            .show()
+    }
+
 }
 
 fun clearCache(context: Context) {

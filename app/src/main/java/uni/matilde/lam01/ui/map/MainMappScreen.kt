@@ -40,6 +40,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.data.remote.repository.AuthRepository
 import uni.matilde.lam01.ui.DrawerContent
 import uni.matilde.lam01.ui.audio.AudioRecordingDialog
@@ -52,7 +53,8 @@ fun MainMapScreen(
     viewModel: MapViewModel = viewModel(),
     authViewModel: AuthViewModel,
     audioViewModel: AudioViewModel,
-    navController: NavController
+    navController: NavController,
+    preferencesHelper: PreferencesHelper
 ) {
 
 
@@ -206,7 +208,7 @@ fun MainMapScreen(
                 userLocation?.let { AudioRecordingDialog(onDismiss = {
                     showRecordingDialog = false
                     audioViewModel.clearUploadStatus() // Resetta lo stato dell'upload
-                }, userLocation = it, audioViewModel = audioViewModel) }
+                }, userLocation = it, audioViewModel = audioViewModel, preferencesHelper = preferencesHelper) }
             }
         }
     }

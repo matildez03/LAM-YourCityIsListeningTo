@@ -25,6 +25,7 @@ class MainActivity : ComponentActivity() {
 
             AppNavHost(
                 isAuthenticated = isAuthenticated.value,
+                preferencesHelper,
                 onLoginSuccess = { token ->
                     // Salva il token e aggiorna lo stato
                     preferencesHelper.saveToken(token)

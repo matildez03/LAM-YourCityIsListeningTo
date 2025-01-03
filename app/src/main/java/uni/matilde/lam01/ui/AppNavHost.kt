@@ -5,6 +5,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import uni.matilde.lam01.App
+import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.ui.audio.AudioViewModel
 import uni.matilde.lam01.ui.audio.AudioViewModelFactory
 import uni.matilde.lam01.ui.auth.AuthViewModel
@@ -16,6 +17,7 @@ import uni.matilde.lam01.ui.map.MainMapScreen
 @Composable
 fun AppNavHost(
     isAuthenticated: Boolean,
+    preferencesHelper: PreferencesHelper,
     onLoginSuccess: (String) -> Unit,
     onLogout: () -> Unit
 ) {
@@ -62,7 +64,7 @@ fun AppNavHost(
             )
         }
         composable("map") { //la schermata principale è direttamente la mappa
-            MainMapScreen(navController = navController, authViewModel = authViewModel, audioViewModel = audioViewModel)
+            MainMapScreen(navController = navController, authViewModel = authViewModel, audioViewModel = audioViewModel, preferencesHelper = preferencesHelper)
         }
 
         composable("audios") {
