@@ -12,12 +12,17 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.ReturnCode
+import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import uni.matilde.lam01.util.player.AndroidAudioPlayer
+import uni.matilde.lam01.util.recorder.AndroidAudioRecorder
 import java.io.File
 import kotlin.math.truncate
 
@@ -27,14 +32,14 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
     private val _audios = MutableLiveData<List<AudioEntity>>()
     val audios: LiveData<List<AudioEntity>> get() = _audios
 
-    private val _errorMessage = MutableLiveData<String?>()
-    val errorMessage: LiveData<String?> get() = _errorMessage
-
     private val _isUploading = MutableLiveData<Boolean>()
     val isUploading: LiveData<Boolean> get() = _isUploading
 
     private val _uploadStatus = MutableLiveData<Boolean?>()
     val uploadStatus: LiveData<Boolean?> get() = _uploadStatus
+
+    private val _errorMessage = MutableLiveData<String?>()
+    val errorMessage: LiveData<String?> get() = _errorMessage
 
     //PERMESSI
     // RECORD_AUDIO
@@ -48,6 +53,15 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
     // READ_EXTERNAL_STORAGE
     private val _hasReadExPermission = MutableStateFlow(false)
     val hasReadExPermission: StateFlow<Boolean> = _hasReadExPermission
+
+
+    //REGISTRAZIONE AUDIO E RIASCOLTO
+    private var recorder: AndroidAudioRecorder? = null
+    private var player: AndroidAudioPlayer? = null
+
+    private val _currentRecordingPath = MutableStateFlow<String?>(null)
+    val currentRecordingPath: StateFlow<String?> = _currentRecordingPath
+
 
     fun checkRecordAudioPermission(context: Context) {
         _hasAudiorecordPermission.value = ContextCompat.checkSelfPermission(
@@ -96,6 +110,108 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
             }
         }
     }
+
+
+    // Funzioni per registrare audio
+    fun startRecording(context: Context, userLocation: LatLng, username: String): Boolean {
+        val filesDir = context.filesDir
+        if (filesDir?.canWrite() == true) {
+            val mp4FilePath = "${filesDir.absolutePath}/${username}_${userLocation.latitude}_${userLocation.longitude}.mp4"
+            val mp4File = File(mp4FilePath)
+
+            // Verifica se il file esiste già e lo cancella
+            if (mp4File.exists()) {
+                Log.d("AudioViewModel", "Il file $mp4FilePath esiste già. Eliminazione in corso...")
+                val deleted = mp4File.delete()
+                if (!deleted) {
+                    _errorMessage.postValue("Errore: impossibile eliminare il file esistente.")
+                    Log.e("AudioViewModel", "Errore: impossibile eliminare il file $mp4FilePath")
+                    return false
+                }
+            }
+            try {
+                recorder = AndroidAudioRecorder(context)
+                recorder?.startRecording(mp4File)
+                _currentRecordingPath.value = mp4FilePath
+                Log.d("AudioViewModel", "Registrazione iniziata su: $mp4FilePath")
+                return true
+            } catch (e: Exception) {
+                _errorMessage.value = "Errore nella registrazione: ${e.message}"
+                Log.e("AudioViewModel", "Errore nella registrazione: ${e.message}")
+            }
+        } else {
+            _errorMessage.value = "Directory non scrivibile: $filesDir"
+            Log.e("AudioViewModel", "Directory non scrivibile: $filesDir")
+        }
+        return false
+    }
+
+    fun stopRecording(context: Context): String? {
+        try {
+            recorder?.stop()
+            val mp4FilePath = _currentRecordingPath.value
+            if (mp4FilePath != null) {
+                val mp3FilePath = mp4FilePath.replace(".mp4", ".mp3")
+                convertToMp3(mp4FilePath, mp3FilePath, context)
+                _currentRecordingPath.value = mp3FilePath
+                return mp3FilePath
+            }
+        } catch (e: Exception) {
+            _errorMessage.value = "Errore durante l'interruzione della registrazione: ${e.message}"
+            Log.e("AudioViewModel", "Errore durante l'interruzione della registrazione: ${e.message}")
+        }
+        return null
+    }
+
+    fun playRecording(context: Context, filePath: String) {
+        val audioFile = File(filePath)
+        if (audioFile.exists() && audioFile.length() > 0) {
+            try {
+                player = AndroidAudioPlayer(context)
+                player?.playFile(audioFile)
+            } catch (e: Exception) {
+                _errorMessage.value = "Errore durante la riproduzione: ${e.message}"
+                Log.e("AudioViewModel", "Errore durante la riproduzione: ${e.message}")
+            }
+        } else {
+            _errorMessage.value = "File audio inesistente o vuoto ${audioFile.absolutePath} - lunghezza ${audioFile.length()}"
+            Log.e("AudioViewModel", "File audio inesistente o vuoto ${audioFile.absolutePath} - lunghezza ${audioFile.length()} - esiste: ${audioFile.exists()}")
+        }
+    }
+
+    private fun convertToMp3(mp4FilePath: String, mp3FilePath: String, context: Context) {
+
+        val mp3File = File(mp3FilePath)
+
+        // Verifica se il file MP3 esiste già e lo cancella
+        if (mp3File.exists()) {
+            Log.d("AudioViewModel", "Il file MP3 $mp3FilePath esiste già. Eliminazione in corso...")
+            val deleted = mp3File.delete()
+            if (!deleted) {
+                _errorMessage.postValue("Errore: impossibile eliminare il file MP3 esistente.")
+                Log.e("AudioViewModel", "Errore: impossibile eliminare il file MP3 $mp3FilePath")
+                return
+            }
+        }
+        val ffmpegCommand = "-loglevel verbose -i \"$mp4FilePath\" -c:a libmp3lame -qscale:a 2 \"$mp3FilePath\""
+
+        FFmpegKit.executeAsync(ffmpegCommand) { session ->
+            val returnCode = session.returnCode
+            if (ReturnCode.isSuccess(returnCode)) {
+                Log.d("AudioViewModel", "Conversione a MP3 completata con successo.")
+                val mp4File = File(mp4FilePath)
+                if (mp4File.exists()) {
+                    mp4File.delete()
+                    Log.d("AudioViewModel", "File MP4 eliminato con successo.")
+                }
+            } else {
+                val failStackTrace = session.failStackTrace ?: "Errore sconosciuto"
+                _errorMessage.value = "Errore durante la conversione a MP3: $failStackTrace"
+                Log.e("AudioViewModel", "Errore durante la conversione a MP3: $failStackTrace")
+            }
+        }
+    }
+
 
     // Funzione per resettare lo stato dell'upload
     fun clearUploadStatus() {
