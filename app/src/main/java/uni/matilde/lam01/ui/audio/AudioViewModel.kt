@@ -257,4 +257,12 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
     fun clearError() {
         _errorMessage.value = null
     }
+
+    fun clearStates(){
+        recorder?.stop()
+        _isRecording.value = false
+        clearError()
+        clearUploadStatus()
+        deletePreviousMp3()
+    }
 }

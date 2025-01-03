@@ -1,36 +1,45 @@
 package uni.matilde.lam01.ui.audio
 
 import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
-import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
 import com.google.android.gms.maps.model.LatLng
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import uni.matilde.lam01.data.local.PreferencesHelper
-import uni.matilde.lam01.util.player.AndroidAudioPlayer
-import uni.matilde.lam01.util.recorder.AndroidAudioRecorder
-import uni.matilde.lam01.util.recorder.AudioRecorder
-import java.io.File
-import java.io.IOException
-import com.arthenica.ffmpegkit.FFmpegKit
-import com.arthenica.ffmpegkit.ReturnCode
+
 
 @Composable
 fun AudioRecordingDialog(
@@ -53,7 +62,6 @@ fun AudioRecordingDialog(
     val hasWriteExPermission by audioViewModel.hasWriteExPermission.collectAsState()
     val hasReadExPermission by audioViewModel.hasReadExPermission.collectAsState()
 
-    val currentRecordingPath by audioViewModel.currentRecordingPath.collectAsState()
     val mp3AudioPath by audioViewModel.mp3AudioPath.collectAsState()
     val errorMessage by audioViewModel.errorMessage.observeAsState()
 
@@ -76,6 +84,19 @@ fun AudioRecordingDialog(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         audioViewModel.checkReadExternalStoragePermission(context)
+    }
+
+    var recordingDuration by remember { mutableStateOf(0) }
+
+    // Timer durante la registrazione
+    LaunchedEffect(isRecording) {
+        if (isRecording) {
+            recordingDuration = 0 // Resetta il timer
+            while (isRecording) {
+                delay(1000L)
+                recordingDuration++
+            }
+        }
     }
 
     // Verifica e richiedi permessi mancanti all'avvio
@@ -128,7 +149,48 @@ fun AudioRecordingDialog(
         onDismissRequest = onDismiss,
         title = { Text("Registra e Riascolta") },
         text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+
+                // Mostra la durata della registrazione
+                if (isRecording) {
+                    Text(
+                        text = "Durata: ${recordingDuration}s",
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+
+                // Animazione di recording
+                if (isRecording) {
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .padding(8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Cerchi animati
+                        repeat(3) { index ->
+                            val animationProgress by rememberInfiniteTransition()
+                                .animateFloat(
+                                    initialValue = 0f,
+                                    targetValue = 1f,
+                                    animationSpec = infiniteRepeatable(
+                                        animation = tween(1200, easing = LinearEasing),
+                                        repeatMode = RepeatMode.Restart
+                                    )
+                                )
+                            Canvas(modifier = Modifier.size(100.dp)) {
+                                drawCircle(
+                                    color = Color.Blue.copy(alpha = 0.3f),
+                                    radius = size.minDimension / 2 * animationProgress
+                                )
+                            }
+                        }
+                        // Punto centrale
+                        Canvas(modifier = Modifier.size(20.dp)) {
+                            drawCircle(color = Color.Blue, radius = size.minDimension / 2)
+                        }
+                    }
+                }
 
                 //INIZIA REGITRAZIONE
                 Button(onClick = {
@@ -171,11 +233,21 @@ fun AudioRecordingDialog(
                             ).show()
                         }
                     }
-                }) {
-                    Text(if (isRecording) "Interrompi Registrazione" else "Inizia Registrazione")
+                }, colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
+                )) {
+                    Text(if (isRecording) "Interrompi Registrazione" else{ if(mp3AudioPath==null) "Inizia Registrazione" else "Riprova"})
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                if (mp3AudioPath!=null) {
+                    Text(
+                        text = "Durata: ${recordingDuration}s",
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
 
                 // RIASCOLTA
                 Button(onClick = {
@@ -187,7 +259,11 @@ fun AudioRecordingDialog(
                         } ?: Toast.makeText(context, "Nessun file disponibile per la riproduzione", Toast.LENGTH_SHORT).show()
                     }
                 },
-                    enabled = (mp3AudioPath!=null)
+                    enabled = (mp3AudioPath!=null),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = Color.White
+                    )
                 ) {
                     Text("Riascolta")
                 }
@@ -219,14 +295,24 @@ fun AudioRecordingDialog(
                 }
 
                  */
-            },
-                enabled = !isRecording
+            } ,
+                enabled = !isRecording,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
+                )
             ) {
                 Text("Conferma e Invia")
             }
         },
         dismissButton = {
-            Button(onClick = onDismiss) {
+            Button(onClick = {
+                onDismiss()
+                audioViewModel.clearStates()
+            }, colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.tertiary,
+                contentColor = Color.White
+            )) {
                 Text("Annulla")
             }
         }
