@@ -9,6 +9,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -65,6 +67,7 @@ fun MainMapScreen(
     val mapUiSettings = remember { MapUiSettings(myLocationButtonEnabled = true) }
     val mapProperties = remember { MapProperties(isMyLocationEnabled = true) }
     var showRecordingDialog by remember { mutableStateOf(false) } // Stato per il popup
+    var showUploadResultDialog by remember { mutableStateOf(false) }
     val hasLocationPermission by viewModel.hasLocationPermission.collectAsState()
 
 
@@ -82,7 +85,7 @@ fun MainMapScreen(
         delay(500) //aggiornamento valore
         if (hasLocationPermission == false) {
             permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-        } else{
+        } else {
             enableLocation(fusedLocationClient, viewModel)
         }
         Log.d("MainMapScreen", "Permesso alla posizione: ${hasLocationPermission}")
@@ -118,7 +121,7 @@ fun MainMapScreen(
             .collect { zoomLevel ->
                 userLocation?.let { position ->
                     viewModel.fetchMarkersForUserLocationAndZoom(position, zoomLevel)
-                }?: Log.w("MainMapScreen", "Posizione non disponibile.")
+                } ?: Log.w("MainMapScreen", "Posizione non disponibile.")
             }
     }
 
@@ -190,16 +193,57 @@ fun MainMapScreen(
                     Text("Aggiungi una registrazione")
                 }
             }
+
             // Popup di registrazione
             if (showRecordingDialog) {
-                userLocation?.let { AudioRecordingDialog(onDismiss = {
-                    showRecordingDialog = false
-                    audioViewModel.clearUploadStatus() // Resetta lo stato dell'upload
-                }, userLocation = it, audioViewModel = audioViewModel, preferencesHelper = preferencesHelper) }
+                userLocation?.let {
+                    AudioRecordingDialog(
+                        onDismiss = {
+                            showRecordingDialog = false
+                            audioViewModel.clearStates()
+                        },
+                        onUploadSuccess = {
+                            showUploadResultDialog = true
+                        } // Mostra il dialogo del risultato
+                        ,
+                        userLocation = it,
+                        audioViewModel = audioViewModel,
+                        preferencesHelper = preferencesHelper)
+                }
+            }
+
+            // Dialogo per il risultato del caricamento
+            if (showUploadResultDialog) {
+                AlertDialog(
+                    onDismissRequest = { showUploadResultDialog = false },
+                    title = { Text("Caricamento completato!") },
+                    text = {
+                        Column (modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()) // Rende la colonna scrollabile
+                            .padding(16.dp)  // Aggiunge margini interni
+                            ) {
+                            val lastAudio = audioViewModel.audios.value?.lastOrNull()
+                            Text("Brano caricato con successo!")
+                            Text("BPM: ${lastAudio?.bpm}")
+                            Text("Danceability: ${lastAudio?.danceability}")
+                            Text("Mood: ${lastAudio?.mood}")
+                            Text("Genere: ${lastAudio?.genre}")
+                            Text("Loudness: ${lastAudio?.loudness}")
+                            Text("Instrument: ${lastAudio?.instrument}")
+                        }
+                    },
+                    confirmButton = {
+                        Button(onClick = { showUploadResultDialog = false }) {
+                            Text("OK")
+                        }
+                    }
+                )
             }
         }
     }
 }
+
 @SuppressLint("MissingPermission")
 fun enableLocation(fusedLocationClient: FusedLocationProviderClient, viewModel: MapViewModel) {
     Log.d("MainMapScreen", "Accedendo alla posizione")

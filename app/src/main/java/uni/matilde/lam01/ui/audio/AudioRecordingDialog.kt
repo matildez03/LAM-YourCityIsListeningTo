@@ -1,6 +1,7 @@
 package uni.matilde.lam01.ui.audio
 
 import android.Manifest
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -39,11 +40,13 @@ import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.delay
 import uni.matilde.lam01.data.local.PreferencesHelper
+import java.io.File
 
 
 @Composable
 fun AudioRecordingDialog(
     onDismiss: () -> Unit,
+    onUploadSuccess: () -> Unit,
     userLocation: LatLng,
     audioViewModel: AudioViewModel,
     preferencesHelper: PreferencesHelper
@@ -51,8 +54,6 @@ fun AudioRecordingDialog(
     val context = LocalContext.current
     val username = preferencesHelper.getUsername() ?: "utente_anonimo"
 
-    var latitude = ""
-    var longitude = ""
     // Stati per la registrazione
     val isRecording by audioViewModel.isRecording.collectAsState()
     var decibelLevel by remember { mutableStateOf(0) }
@@ -118,19 +119,6 @@ fun AudioRecordingDialog(
         }
     }
 
-    // Logica per aggiornare il livello del suono
-    LaunchedEffect(isRecording) {
-        if (isRecording) {
-            //mostra dettagli decibel ecc
-        }
-        /*
-        INTERRUZIONE REGISTRAZIONE
-         */
-        else {
-            //Log.d("AudioRecordingDialog", "Prima di interrompere: Esiste: ${audioFile?.exists()}, Lunghezza: ${audioFile?.length()}")
-
-        }
-    }
 
     val uploadStatus by audioViewModel.uploadStatus.observeAsState()
     LaunchedEffect(uploadStatus) {
@@ -141,7 +129,13 @@ fun AudioRecordingDialog(
                 "Errore durante il caricamento dell'audio."
             }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            audioViewModel.clearUploadStatus() // Resetta lo stato dopo aver mostrato il Toast
+            if (success) {
+                onDismiss() // Chiudi il dialogo di registrazione
+                onUploadSuccess() // Mostra il dialogo di successo del caricamento
+            } else {
+                Toast.makeText(context, "Errore durante il caricamento dell'audio.", Toast.LENGTH_SHORT).show()
+                audioViewModel.clearUploadStatus()
+            }
         }
     }
 
@@ -272,31 +266,18 @@ fun AudioRecordingDialog(
         },
         confirmButton = {
             Button(onClick = {
-                /*
-                TODO: IMPLEMENTA
-                val file = File(mp3FilePath)
-                audioViewModel.clearUploadStatus()
-                userLocation?.let { location ->
-                    if (file != null) {
-                        audioViewModel.uploadAudio(
-                            file = file,
-                            latitude = location.latitude,
-                            longitude = location.longitude
-                        )
-                    }
-                    Log.d("AudioViewModel", "Caricamento dell'audio: ${file?.name}")
-
-                } ?: run {
-                    Toast.makeText(
-                        context,
-                        "Posizione non disponibile, impossibile caricare l'audio",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                if(mp3AudioPath!=null) {
+                    audioViewModel.clearUploadStatus()
+                    audioViewModel.uploadAudio(
+                        username,
+                        mp3AudioPath!!,
+                        userLocation.latitude,
+                        userLocation.longitude
+                    )
+                    Log.d("AudioViewModel", "Caricamento dell'audio: ${mp3AudioPath}")
                 }
-
-                 */
             } ,
-                enabled = !isRecording,
+                enabled = (!isRecording && mp3AudioPath!=null),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = Color.White
@@ -308,7 +289,6 @@ fun AudioRecordingDialog(
         dismissButton = {
             Button(onClick = {
                 onDismiss()
-                audioViewModel.clearStates()
             }, colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.tertiary,
                 contentColor = Color.White

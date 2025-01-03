@@ -3,6 +3,7 @@ package uni.matilde.lam01.ui.audio
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Geocoder
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
@@ -21,9 +22,11 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import uni.matilde.lam01.data.remote.models.UploadAudioResponse
 import uni.matilde.lam01.util.player.AndroidAudioPlayer
 import uni.matilde.lam01.util.recorder.AndroidAudioRecorder
 import java.io.File
+import java.util.Locale
 import kotlin.math.truncate
 
 
@@ -91,16 +94,37 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
     }
 
 
-    fun uploadAudio(file: File, latitude: Double, longitude: Double){
+    fun uploadAudio(username: String, filePath: String, latitude: Double, longitude: Double){
         _isUploading.value = true
         viewModelScope.launch {
             try {
+                val file = File(filePath)
                 val requestFile = file.asRequestBody("audio/mpeg".toMediaTypeOrNull())
                 val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
                 val result = repository.uploadAudio(longitude, latitude, body)
-                result.onSuccess { response ->
+                result.onSuccess { audioResponse ->
                     Log.d("AudioViewModel", "Upload completato con successo!")
                     _uploadStatus.postValue(true) // Aggiorna lo stato come successo
+                    Log.d("AudioViewModel", audioResponse.toString())
+
+
+                    // Salva in locale
+                    val audioEntity = AudioEntity(
+                        username = username,
+                        filePath = filePath,
+                        bpm = audioResponse.bpm,
+                        danceability = audioResponse.danceability,
+                        loudness = audioResponse.loudness,
+                        mood = audioResponse.mood.keys.joinToString(", "),
+                        genre = audioResponse.genre.keys.joinToString(", "),
+                        instrument = audioResponse.instrument.keys.joinToString(", "),
+                        latitude = latitude,
+                        longitude = longitude
+                    )
+
+                    repository.saveAudioLocally(audioEntity)
+                    addAudio(audioEntity)
+
                 }.onFailure { error ->
                     Log.e("AudioViewModel", "Errore durante l'upload: ${error.message}")
                     _errorMessage.postValue("Errore durante l'upload: ${error.message}")
@@ -116,6 +140,7 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
             }
         }
     }
+
 
 
     // Funzioni per registrare audio
@@ -265,4 +290,16 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
         clearUploadStatus()
         deletePreviousMp3()
     }
+
+    fun addAudio(audioEntity: AudioEntity) {
+        // Recupera la lista corrente o una lista vuota se è null
+        val currentList = _audios.value ?: emptyList()
+
+        // Crea una nuova lista aggiungendo l'elemento
+        val updatedList = currentList + audioEntity
+
+        // Aggiorna il valore di _audios
+        _audios.postValue(updatedList)
+    }
+
 }

@@ -27,6 +27,7 @@ interface ApiService {
 
     //metodi audio
 
+    @Multipart
     @POST("upload")
     suspend fun uploadAudio(
         @Header("Authorization") token: String,
