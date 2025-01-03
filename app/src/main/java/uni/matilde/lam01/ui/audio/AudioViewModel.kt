@@ -62,6 +62,12 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
     private val _currentRecordingPath = MutableStateFlow<String?>(null)
     val currentRecordingPath: StateFlow<String?> = _currentRecordingPath
 
+    private val _mp3AudioPath = MutableStateFlow<String?>(null)
+    val mp3AudioPath: StateFlow<String?> = _mp3AudioPath
+
+    private val _isRecording = MutableStateFlow(false)
+    val isRecording: StateFlow<Boolean> = _isRecording
+
 
     fun checkRecordAudioPermission(context: Context) {
         _hasAudiorecordPermission.value = ContextCompat.checkSelfPermission(
@@ -129,10 +135,14 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
                     return false
                 }
             }
+
+            deletePreviousMp3()
+
             try {
                 recorder = AndroidAudioRecorder(context)
                 recorder?.startRecording(mp4File)
                 _currentRecordingPath.value = mp4FilePath
+                _isRecording.value = true // Aggiorna lo stato
                 Log.d("AudioViewModel", "Registrazione iniziata su: $mp4FilePath")
                 return true
             } catch (e: Exception) {
@@ -146,6 +156,30 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
         return false
     }
 
+    private fun deletePreviousMp3() {
+        //cancella eventuali audio scartati
+        if(_mp3AudioPath.value != null) {
+            val mp3File = _mp3AudioPath.value?.let { File(it) }
+            if (mp3File!!.exists()) {
+                Log.d(
+                    "AudioViewModel",
+                    "Eliminazione del file precedentemente scartato in corso..."
+                )
+                val deleted = mp3File.delete()
+                if (!deleted) {
+                    _errorMessage.postValue("Errore: impossibile eliminare il file esistente.")
+                    Log.e(
+                        "AudioViewModel",
+                        "Errore: impossibile eliminare il file ${_mp3AudioPath.value}"
+                    )
+                } else {
+                    Log.d("AudioViewModel", "File scartato eliminato.")
+                }
+            }
+            _mp3AudioPath.value = null //reset
+        }
+    }
+
     fun stopRecording(context: Context): String? {
         try {
             recorder?.stop()
@@ -153,7 +187,9 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
             if (mp4FilePath != null) {
                 val mp3FilePath = mp4FilePath.replace(".mp4", ".mp3")
                 convertToMp3(mp4FilePath, mp3FilePath, context)
-                _currentRecordingPath.value = mp3FilePath
+                _mp3AudioPath.value = mp3FilePath
+                _isRecording.value = false // Aggiorna lo stato
+                Log.d("AudioViewModel", "Registrazione interrotta su: $mp4FilePath")
                 return mp3FilePath
             }
         } catch (e: Exception) {

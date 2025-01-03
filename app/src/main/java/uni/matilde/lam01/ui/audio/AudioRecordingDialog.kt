@@ -45,7 +45,7 @@ fun AudioRecordingDialog(
     var latitude = ""
     var longitude = ""
     // Stati per la registrazione
-    var isRecording by remember { mutableStateOf(false) }
+    val isRecording by audioViewModel.isRecording.collectAsState()
     var decibelLevel by remember { mutableStateOf(0) }
 
     // Stati per i permessi
@@ -54,6 +54,7 @@ fun AudioRecordingDialog(
     val hasReadExPermission by audioViewModel.hasReadExPermission.collectAsState()
 
     val currentRecordingPath by audioViewModel.currentRecordingPath.collectAsState()
+    val mp3AudioPath by audioViewModel.mp3AudioPath.collectAsState()
     val errorMessage by audioViewModel.errorMessage.observeAsState()
 
     // Launcher per il permesso di registrazione audio
@@ -131,29 +132,47 @@ fun AudioRecordingDialog(
 
                 //INIZIA REGITRAZIONE
                 Button(onClick = {
-                    if(!hasRecordAudioPermission || !hasWriteExPermission){
-                        Toast.makeText(context, "Concedi i permessi di registrazione e l'accesso ai file per procedere!", Toast.LENGTH_SHORT).show()
-                    } else {val success = audioViewModel.startRecording(context, userLocation, username)
-                        if (!success) {
-                            Toast.makeText(context, "Errore durante l'avvio della registrazione", Toast.LENGTH_SHORT).show()
-                        } else{
-                            Toast.makeText(context, "Registrazione avviata", Toast.LENGTH_SHORT).show()
+                    // Button di start
+                    if (!isRecording) {
+                        if (!hasRecordAudioPermission || !hasWriteExPermission) {
+                            Toast.makeText(
+                                context,
+                                "Concedi i permessi di registrazione e l'accesso ai file per procedere!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            val success =
+                                audioViewModel.startRecording(context, userLocation, username)
+                            if (!success) {
+                                Toast.makeText(
+                                    context,
+                                    "Errore durante l'avvio della registrazione",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                Toast.makeText(context, "Registrazione avviata", Toast.LENGTH_SHORT)
+                                    .show()
+                            }
+                        }
+                    } else {
+                        // Button di interruzione
+                        val mp3FilePath = audioViewModel.stopRecording(context)
+                        if (mp3FilePath == null) {
+                            Toast.makeText(
+                                context,
+                                "Errore durante l'interruzione della registrazione",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Registrazione completata",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
-
                 }) {
-                    Text("Inizia Registrazione")
-                }
-
-                //INTERROMPI REGISTRAZIONE
-                Button(onClick = {
-                    val mp3FilePath = audioViewModel.stopRecording(context)
-                    if (mp3FilePath == null) {
-                        Toast.makeText(context, "Errore durante l'interruzione della registrazione", Toast.LENGTH_SHORT).show()
-                    }
-
-                }) {
-                    Text("Ferma Registrazione")
+                    Text(if (isRecording) "Interrompi Registrazione" else "Inizia Registrazione")
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -163,11 +182,13 @@ fun AudioRecordingDialog(
                     if(!hasReadExPermission){
                         Toast.makeText(context, "Concedi i permessi di lettura file per procedere!", Toast.LENGTH_SHORT).show()
                     } else {
-                        currentRecordingPath?.let { path ->
+                        mp3AudioPath?.let { path ->
                             audioViewModel.playRecording(context, path)
                         } ?: Toast.makeText(context, "Nessun file disponibile per la riproduzione", Toast.LENGTH_SHORT).show()
                     }
-                }) {
+                },
+                    enabled = (mp3AudioPath!=null)
+                ) {
                     Text("Riascolta")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -198,7 +219,9 @@ fun AudioRecordingDialog(
                 }
 
                  */
-            }) {
+            },
+                enabled = !isRecording
+            ) {
                 Text("Conferma e Invia")
             }
         },
