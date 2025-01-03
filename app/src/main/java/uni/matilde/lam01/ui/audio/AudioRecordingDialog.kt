@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -39,11 +40,21 @@ fun AudioRecordingDialog(
     preferencesHelper: PreferencesHelper
 ) {
     val context = LocalContext.current
+
     var mp4FilePath = ""
     var mp3FilePath = ""
+
+    var latitude = ""
+    var longitude = ""
     // Stati per la registrazione
     var isRecording by remember { mutableStateOf(false) }
     var decibelLevel by remember { mutableStateOf(0) }
+
+    // Stati per i permessi
+    val hasRecordAudioPermission by audioViewModel.hasAudiorecordPermission.collectAsState()
+    val hasWriteExPermission by audioViewModel.hasWriteExPermission.collectAsState()
+    val hasReadExPermission by audioViewModel.hasReadExPermission.collectAsState()
+
     val recorder by lazy {
         AndroidAudioRecorder(context)
     }
@@ -52,73 +63,45 @@ fun AudioRecordingDialog(
         AndroidAudioPlayer(context)
     }
 
-
-    // Stato per sapere se l'utente ha concesso il permesso
-    var hasAudioPermission by remember {
-        mutableStateOf(
-            ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.RECORD_AUDIO
-            ) == PackageManager.PERMISSION_GRANTED
-        )
+    // Launcher per il permesso di registrazione audio
+    val recordAudioLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        audioViewModel.checkRecordAudioPermission(context)
     }
 
-    // Launcher per richiedere il permesso
-    val requestPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val writeGranted = permissions[Manifest.permission.WRITE_EXTERNAL_STORAGE] == true
-        val readGranted = permissions[Manifest.permission.READ_EXTERNAL_STORAGE] == true
-        val recordGranted = permissions[Manifest.permission.RECORD_AUDIO] == true
-
-        if (!writeGranted) {
-            Log.e("AudioRecordingDialog", "Permesso per scrivere nella cache negato.")
-        }
-
-        if (!readGranted) {
-            Log.e("AudioRecordingDialog", "Permesso per scrivere nella cache negato.")
-        }
-
-        if (!recordGranted) {
-            Log.e("AudioRecordingDialog", "Permesso per registrare audio negato.")
-        }
-
-        if (writeGranted && recordGranted) {
-            Log.d("AudioRecordingDialog", "Tutti i permessi concessi.")
-        }
+    // Launcher per il permesso di scrittura
+    val writeExLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        audioViewModel.checkWriteExternalStoragePermission(context)
     }
 
-
-    val hasWritePermission = ActivityCompat.checkSelfPermission(
-        context,
-        Manifest.permission.WRITE_EXTERNAL_STORAGE
-    ) == PackageManager.PERMISSION_GRANTED
-
-    if (!hasWritePermission) {
-        Log.e("AudioRecordingDialog", "Permessi mancanti per scrivere nella cache.")
+    // Launcher per il permesso di lettura
+    val readExLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        audioViewModel.checkReadExternalStoragePermission(context)
     }
 
-    val hasReadPermission = ActivityCompat.checkSelfPermission(
-        context,
-        Manifest.permission.READ_EXTERNAL_STORAGE
-    ) == PackageManager.PERMISSION_GRANTED
-
-    if (!hasReadPermission) {
-        Log.e("AudioRecordingDialog", "Permessi mancanti per leggere/scrivere.")
-    }
-
+    // Verifica e richiedi permessi mancanti all'avvio
     LaunchedEffect(Unit) {
-        requestPermissionLauncher.launch(
-            arrayOf(
-                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.RECORD_AUDIO
-            )
-        )
+        audioViewModel.checkRecordAudioPermission(context)
+        audioViewModel.checkWriteExternalStoragePermission(context)
+        audioViewModel.checkReadExternalStoragePermission(context)
 
+        if (!hasRecordAudioPermission) {
+            recordAudioLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
 
+        if (!hasWriteExPermission && android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.Q) {
+            writeExLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        }
+
+        if (!hasReadExPermission) {
+            readExLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
     }
-
 
     // Logica per aggiornare il livello del suono
     LaunchedEffect(isRecording) {
@@ -155,15 +138,46 @@ fun AudioRecordingDialog(
 
                 //INIZIA REGITRAZIONE
                 Button(onClick = {
-                    if (!hasAudioPermission) {
-                        requestPermissionLauncher.launch(arrayOf(Manifest.permission.RECORD_AUDIO))
-                        return@Button
+                    if(!hasRecordAudioPermission || !hasWriteExPermission){
+                        Toast.makeText(context, "Concedi i permessi di registrazione e l'accesso ai file per procedere!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        val username = preferencesHelper.getUsername()
+
+                        //accesso ai file del dispositivo
+                        Log.d("AudioRecordingDialog", "Percorso dei file: ${context.filesDir?.absolutePath}")
+
+                        // Assicuriamoci che la directory esista e sia scrivibile
+                        val filesDir = context.filesDir
+
+                        if (filesDir?.exists() == false) {
+                            val isDirCreated = context.cacheDir.mkdirs()
+                            if (!isDirCreated) {
+                                Log.e("AudioRecordingDialog", "Impossibile creare la directory dei file")
+                                Toast.makeText(
+                                    context,
+                                    "Errore nella creazione della directory della cache",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                        if (filesDir?.canWrite() == true) {
+                            Log.d(
+                                "AudioRecordingDialog",
+                                "La directory $filesDir esiste ed è scrivibile."
+                            )
+                            latitude = userLocation.latitude.toString()
+                            longitude = userLocation.longitude.toString()
+                            mp4FilePath =
+                                context.filesDir.absolutePath + "/" + username + "_" + latitude + "_" + longitude + ".mp4"
+                            startRecording(context, recorder, mp4FilePath)
+                            isRecording = true
+                        } else{
+                            Log.e(
+                                "AudioRecordingDialog",
+                                "La directory $filesDir non è scrivibile."
+                            )
+                        }
                     }
-                    val username = preferencesHelper.getUsername()
-                    mp4FilePath =
-                        context.filesDir.absolutePath + "/" + username + "_" + userLocation + ".mp4"
-                    startRecording(context, recorder, mp4FilePath)
-                    isRecording = true
 
                 }) {
                     Text("Inizia Registrazione")
@@ -171,14 +185,10 @@ fun AudioRecordingDialog(
 
                 //INTERROMPI REGISTRAZIONE
                 Button(onClick = {
-                    if (!hasAudioPermission) {
-                        requestPermissionLauncher.launch(arrayOf(Manifest.permission.RECORD_AUDIO))
-                        return@Button
-                    }
                     val username = preferencesHelper.getUsername()
                     // Convete il file mp4 in mp3
                     mp3FilePath =
-                        context.filesDir.absolutePath + "/" + username + "_" + userLocation + ".mp3"
+                        context.filesDir.absolutePath + "/" + username + "_" + latitude + "_" + longitude + ".mp3"
                     stopRecording(context, recorder, mp4FilePath, mp3FilePath)
 
                 }) {
@@ -189,7 +199,11 @@ fun AudioRecordingDialog(
 
                 // RIASCOLTA
                 Button(onClick = {
-                    playRecording(context, mp3FilePath, player)
+                    if(!hasReadExPermission){
+                        Toast.makeText(context, "Concedi i permessi di lettura file per procedere!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        playRecording(context, mp3FilePath, player)
+                    }
                 }) {
                     Text("Riascolta")
                 }
@@ -231,26 +245,6 @@ fun AudioRecordingDialog(
 }
 
 fun startRecording(context: Context, recorder: AudioRecorder, mp4FilePath: String) {
-    Log.d("AudioRecordingDialog", "Percorso della cache: ${context.externalCacheDir?.absolutePath}")
-
-    // Assicuriamoci che la directory della cache esista e sia scrivibile
-    val cacheDir = context.externalCacheDir
-
-    if (cacheDir?.exists() == false) {
-        val isDirCreated = context.cacheDir.mkdirs()
-        if (!isDirCreated) {
-            Log.e("AudioRecordingDialog", "Impossibile creare la directory della cache")
-            Toast.makeText(
-                context,
-                "Errore nella creazione della directory della cache",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-    }
-    if (cacheDir?.canWrite() == true) {
-        Log.e("AudioRecordingDialog", "La directory cache non è scrivibile.")
-    }
-
     try {
         val mp4File = File(mp4FilePath)
         Log.d(
@@ -278,7 +272,16 @@ fun stopRecording(
         e.printStackTrace()
     }
 
-    val ffmpegCommand = "-i $mp4FilePath -codec:a libmp3lame -qscale:a 2 $mp3FilePath"
+    val mp4File = File(mp4FilePath)
+    if (!mp4File.exists() || mp4File.length() == 0L) {
+        Log.e("FFmpegKit", "Il file MP4 non esiste o è vuoto: $mp4FilePath")
+        return
+    }
+
+    val ffmpegCommand = "-loglevel verbose -i \"$mp4FilePath\" -c:a libmp3lame -qscale:a 2 \"$mp3FilePath\""
+
+    Log.d("FFmpegKit", "MP4 file path: $mp4FilePath")
+    Log.d("FFmpegKit", "MP3 file path: $mp3FilePath")
 
 
     FFmpegKit.executeAsync(ffmpegCommand) { session ->

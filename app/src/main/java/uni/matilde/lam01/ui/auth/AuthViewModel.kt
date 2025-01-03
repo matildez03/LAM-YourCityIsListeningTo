@@ -19,7 +19,6 @@ sealed class AuthState {
 }
 class AuthViewModel(
     private val repository: AuthRepository,
-    private val preferencesHelper: PreferencesHelper
 ) : ViewModel() {
 
     // MutableLiveData privata per gestire lo stato internamente
@@ -56,7 +55,6 @@ class AuthViewModel(
             // Gestione esplicita di successo ed errore
             if (result.isSuccess) {
                 _authState.value = AuthState.Success(result.getOrNull()!!)
-                preferencesHelper.saveUsername(username)
             } else {
                 _authState.value = AuthState.Error(result.exceptionOrNull()?.message)
             }

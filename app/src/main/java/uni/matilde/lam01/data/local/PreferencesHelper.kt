@@ -26,9 +26,7 @@ class PreferencesHelper(context: Context) {
 
     // Recupera il token di autenticazione
     fun getToken(): String? {
-        val token = sharedPreferences.getString(KEY_AUTH_TOKEN, null)
-        Log.d("PreferencesHelper", "Token letto: $token") //debug
-        return token
+        return  sharedPreferences.getString(KEY_AUTH_TOKEN, null)
     }
 
     // LiveData per osservare il token

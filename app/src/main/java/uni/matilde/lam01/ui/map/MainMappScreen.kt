@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -37,6 +38,7 @@ import androidx.navigation.compose.rememberNavController
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -63,40 +65,27 @@ fun MainMapScreen(
     val mapUiSettings = remember { MapUiSettings(myLocationButtonEnabled = true) }
     val mapProperties = remember { MapProperties(isMyLocationEnabled = true) }
     var showRecordingDialog by remember { mutableStateOf(false) } // Stato per il popup
+    val hasLocationPermission by viewModel.hasLocationPermission.collectAsState()
 
 
-
-    // Stato per i permessi
-    val hasLocationPermission = remember { mutableStateOf(false) }
-
-
-    // Gestione dei permessi con ActivityResultLauncher
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
+    // Launcher per richiedere i permessi
+    val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        if (isGranted) {
-            Toast.makeText(context, "Permesso concesso!", Toast.LENGTH_SHORT).show()
-            hasLocationPermission.value = true
-            enableLocation(fusedLocationClient, viewModel)
-        } else {
-            Toast.makeText(context, "Permesso negato. Usando il fallback.", Toast.LENGTH_LONG).show()
-            viewModel.updateUserLocation(LatLng(44.4949, 11.3426)) // Bologna come fallback
-        }
+        // Aggiorna lo stato del permesso nel ViewModel
+        viewModel.checkLocationPermission(context)
     }
 
-
-    // Richiedi i permessi appena il composable viene avviato
+    // Controlla il permesso all'avvio del composable
     LaunchedEffect(Unit) {
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-        } else {
-            hasLocationPermission.value = true
+        viewModel.checkLocationPermission(context)
+        delay(500) //aggiornamento valore
+        if (hasLocationPermission == false) {
+            permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        } else{
             enableLocation(fusedLocationClient, viewModel)
         }
+        Log.d("MainMapScreen", "Permesso alla posizione: ${hasLocationPermission}")
     }
 
 
@@ -136,8 +125,6 @@ fun MainMapScreen(
 
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
-
-
 
 
     ModalNavigationDrawer(
@@ -215,9 +202,11 @@ fun MainMapScreen(
 }
 @SuppressLint("MissingPermission")
 fun enableLocation(fusedLocationClient: FusedLocationProviderClient, viewModel: MapViewModel) {
+    Log.d("MainMapScreen", "Accedendo alla posizione")
     fusedLocationClient.lastLocation.addOnSuccessListener { location ->
         if (location != null) {
             viewModel.updateUserLocation(LatLng(location.latitude, location.longitude))
+            Log.d("MainMapScreen", "user location aggiornata: ${location}")
         } else {
             Log.w("MainMapScreen", "Posizione non disponibile. Usando il fallback.")
             viewModel.updateUserLocation(LatLng(44.4949, 11.3426)) // Bologna come fallback

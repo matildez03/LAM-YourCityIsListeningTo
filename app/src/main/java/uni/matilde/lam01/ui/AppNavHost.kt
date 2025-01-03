@@ -25,7 +25,7 @@ fun AppNavHost(
 
     // Ottieni l'istanza di AuthViewModel
     val authViewModelFactory =
-        AuthViewModelFactory(App.instance.authRepository, App.instance.preferencesHelper)
+        AuthViewModelFactory(App.instance.authRepository)
     val authViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
         modelClass = AuthViewModel::class.java,
         factory = authViewModelFactory
@@ -37,8 +37,6 @@ fun AppNavHost(
         modelClass = AudioViewModel::class.java,
         factory = audioViewModelFactory
     )
-
-
 
 
     NavHost(

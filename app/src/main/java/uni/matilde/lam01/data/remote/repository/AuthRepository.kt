@@ -72,6 +72,7 @@ class AuthRepository(
 
     suspend fun getToken(username: String, password: String): Result<TokenResponse> {
         if (!tokenManager.needsTokenRenewal()) {
+            preferencesHelper.saveUsername(username)
             return Result.success(
                 TokenResponse(
                     client_secret = tokenManager.getToken()!!,
@@ -87,6 +88,7 @@ class AuthRepository(
                     tokenManager.setToken(tokenResponse.client_secret)
                     preferencesHelper.saveToken(tokenResponse.client_secret)
                     preferencesHelper.saveClientId(tokenResponse.client_id)
+                    preferencesHelper.saveUsername(username)
                     Result.success(tokenResponse)
                 } ?: Result.failure(Exception("Risposta vuota"))
             } else {

@@ -1,13 +1,19 @@
 package uni.matilde.lam01.ui.audio
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.util.Log
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import uni.matilde.lam01.data.local.AudioEntity
 import uni.matilde.lam01.data.remote.repository.AudioRepository
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -29,6 +35,40 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
 
     private val _uploadStatus = MutableLiveData<Boolean?>()
     val uploadStatus: LiveData<Boolean?> get() = _uploadStatus
+
+    //PERMESSI
+    // RECORD_AUDIO
+    private val _hasAudiorecordPermission = MutableStateFlow(false)
+    val hasAudiorecordPermission: StateFlow<Boolean> = _hasAudiorecordPermission
+
+    // WRITE_EXTERNAL_STORAGE
+    private val _hasWriteExPermission = MutableStateFlow(false)
+    val hasWriteExPermission: StateFlow<Boolean> = _hasWriteExPermission
+
+    // READ_EXTERNAL_STORAGE
+    private val _hasReadExPermission = MutableStateFlow(false)
+    val hasReadExPermission: StateFlow<Boolean> = _hasReadExPermission
+
+    fun checkRecordAudioPermission(context: Context) {
+        _hasAudiorecordPermission.value = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    fun checkWriteExternalStoragePermission(context: Context) {
+        _hasWriteExPermission.value = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    fun checkReadExternalStoragePermission(context: Context) {
+        _hasReadExPermission.value = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
+    }
 
 
     fun uploadAudio(file: File, latitude: Double, longitude: Double){

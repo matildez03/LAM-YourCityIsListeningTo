@@ -1,5 +1,9 @@
 package uni.matilde.lam01.ui.map
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -26,6 +30,18 @@ class MapViewModel : ViewModel() {
     // LiveData per i marker sulla mappa
     private val _markers = MutableLiveData<List<MapMarker>>()
     val markers: LiveData<List<MapMarker>> get() = _markers
+
+    private val _hasLocationPermission = MutableStateFlow(false)
+    val hasLocationPermission: StateFlow<Boolean> = _hasLocationPermission
+
+    fun checkLocationPermission(context: Context) {
+        viewModelScope.launch {
+            _hasLocationPermission.value = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        }
+    }
 
 
     // Funzione per caricare i marker vicini alla posizione dell'utente
