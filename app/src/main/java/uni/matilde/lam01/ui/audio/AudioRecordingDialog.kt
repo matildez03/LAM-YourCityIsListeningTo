@@ -48,6 +48,7 @@ fun AudioRecordingDialog(
     onDismiss: () -> Unit,
     onUploadSuccess: () -> Unit,
     userLocation: LatLng,
+    locationName: String,
     audioViewModel: AudioViewModel,
     preferencesHelper: PreferencesHelper
 ) {
@@ -144,7 +145,7 @@ fun AudioRecordingDialog(
         title = { Text("Registra e Riascolta") },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-
+                Text(locationName?:userLocation.toString()) //nome posizione
                 // Mostra la durata della registrazione
                 if (isRecording) {
                     Text(
@@ -272,7 +273,8 @@ fun AudioRecordingDialog(
                         username,
                         mp3AudioPath!!,
                         userLocation.latitude,
-                        userLocation.longitude
+                        userLocation.longitude,
+                        locationName
                     )
                     Log.d("AudioViewModel", "Caricamento dell'audio: ${mp3AudioPath}")
                 }

@@ -25,6 +25,7 @@ class AuthViewModel(
     private val _authState = MutableLiveData<AuthState?>()
     val authState: LiveData<AuthState?> = _authState
 
+
     fun resetState() {
         _authState.value = AuthState.Idle
     }

@@ -4,6 +4,7 @@ import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*
 import uni.matilde.lam01.data.local.AudioEntity
+import uni.matilde.lam01.data.remote.models.AllAudiosResponse
 import uni.matilde.lam01.data.remote.models.AuthRequest
 import uni.matilde.lam01.data.remote.models.AuthResponse
 import uni.matilde.lam01.data.remote.models.DeleteAccountResponse
@@ -37,6 +38,6 @@ interface ApiService {
     ): Response<UploadAudioResponse>
 
     @GET("audio/all")
-    suspend fun getAllSongs(): Response<List<AudioEntity>>
+    suspend fun getAllSongs(@Header("Authorization") token: String): Response<List<AllAudiosResponse>>
 
 }

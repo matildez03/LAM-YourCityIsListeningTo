@@ -3,6 +3,7 @@ package uni.matilde.lam01.ui.map
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.location.Geocoder
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -50,11 +51,12 @@ import uni.matilde.lam01.ui.DrawerContent
 import uni.matilde.lam01.ui.audio.AudioRecordingDialog
 import uni.matilde.lam01.ui.audio.AudioViewModel
 import uni.matilde.lam01.ui.auth.AuthViewModel
+import java.util.Locale
 
 
 @Composable
 fun MainMapScreen(
-    viewModel: MapViewModel = viewModel(),
+    viewModel: MapViewModel,
     authViewModel: AuthViewModel,
     audioViewModel: AudioViewModel,
     navController: NavController,
@@ -69,6 +71,8 @@ fun MainMapScreen(
     var showRecordingDialog by remember { mutableStateOf(false) } // Stato per il popup
     var showUploadResultDialog by remember { mutableStateOf(false) }
     val hasLocationPermission by viewModel.hasLocationPermission.collectAsState()
+    // Ottenere il nome della posizione
+    val locationName by viewModel.locationName.observeAsState("Posizione sconosciuta")
 
 
     // Launcher per richiedere i permessi
@@ -105,10 +109,18 @@ fun MainMapScreen(
 
     // Aggiorna la posizione della fotocamera quando la posizione dell'utente cambia
     LaunchedEffect(userLocation) {
-        userLocation?.let { position ->
-            cameraPositionState.move(
-                CameraUpdateFactory.newLatLngZoom(position, 12f)
-            )
+        try {
+            userLocation?.let { position ->
+                cameraPositionState.move(
+                    CameraUpdateFactory.newLatLngZoom(position, 12f)
+                )
+                //Assegna un nome alla posizione
+                viewModel.fetchLocationName(context, position.latitude, position.longitude)
+                viewModel.fetchMarkers()
+
+            }
+        } catch (e: Exception) {
+            Log.e("GeocoderError", "Errore durante la geocodifica: ${e.message}")
         }
     }
 
@@ -174,16 +186,24 @@ fun MainMapScreen(
                 ) {
                     // Aggiunge marker sulla mappa
                     markers.forEach { marker ->
-                        MapMarker(
-                            position = marker.position,
-                            title = marker.title,
-                            description = marker.description
+                        Marker(
+                            state = MarkerState(position = marker.position),
+                            //title = "Posizione marker",
+                            snippet = "Dettagli registrazione",
+                            onClick = {
+                                // Azione da eseguire quando il marker viene cliccato
+                                //TODO: apri dettagli
+                                Log.d("Marker", "Marker cliccato: ${marker.position}")
+                                false // Ritorna false per mantenere il comportamento predefinito
+                            }
                         )
                     }
+                    Log.d("MainMapScreen", "Eventuali markers caricati") //debug
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                Text(text = "Posizione attuale: $locationName", modifier = Modifier.padding(all=16.dp))
                 Button(
                     onClick = { showRecordingDialog = true },
                     modifier = Modifier
@@ -207,6 +227,7 @@ fun MainMapScreen(
                         } // Mostra il dialogo del risultato
                         ,
                         userLocation = it,
+                        locationName = locationName,
                         audioViewModel = audioViewModel,
                         preferencesHelper = preferencesHelper)
                 }
@@ -218,11 +239,12 @@ fun MainMapScreen(
                     onDismissRequest = { showUploadResultDialog = false },
                     title = { Text("Caricamento completato!") },
                     text = {
-                        Column (modifier = Modifier
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState()) // Rende la colonna scrollabile
-                            .padding(16.dp)  // Aggiunge margini interni
-                            ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(rememberScrollState()) // Rende la colonna scrollabile
+                                .padding(16.dp)  // Aggiunge margini interni
+                        ) {
                             val lastAudio = audioViewModel.audios.value?.lastOrNull()
                             Text("Brano caricato con successo!")
                             Text("BPM: ${lastAudio?.bpm}")

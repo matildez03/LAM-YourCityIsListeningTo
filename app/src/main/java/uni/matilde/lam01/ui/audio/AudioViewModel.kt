@@ -94,7 +94,7 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
     }
 
 
-    fun uploadAudio(username: String, filePath: String, latitude: Double, longitude: Double){
+    fun uploadAudio(username: String, filePath: String, latitude: Double, longitude: Double, locationName: String){
         _isUploading.value = true
         viewModelScope.launch {
             try {
@@ -111,13 +111,14 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
                     // Salva in locale
                     val audioEntity = AudioEntity(
                         username = username,
+                        locationName = locationName,
                         filePath = filePath,
                         bpm = audioResponse.bpm,
                         danceability = audioResponse.danceability,
                         loudness = audioResponse.loudness,
-                        mood = audioResponse.mood.keys.joinToString(", "),
-                        genre = audioResponse.genre.keys.joinToString(", "),
-                        instrument = audioResponse.instrument.keys.joinToString(", "),
+                        mood = audioResponse.mood.maxByOrNull { it.value }?.key,
+                        genre = audioResponse.genre.maxByOrNull { it.value }?.key,
+                        instrument = audioResponse.instrument.maxByOrNull { it.value }?.key,
                         latitude = latitude,
                         longitude = longitude
                     )

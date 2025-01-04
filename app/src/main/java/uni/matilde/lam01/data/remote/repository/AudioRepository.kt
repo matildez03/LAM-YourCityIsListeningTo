@@ -9,6 +9,7 @@ import uni.matilde.lam01.data.local.AudioDao
 import uni.matilde.lam01.data.local.AudioEntity
 import retrofit2.Response
 import uni.matilde.lam01.data.local.PreferencesHelper
+import uni.matilde.lam01.data.remote.models.AllAudiosResponse
 import uni.matilde.lam01.data.remote.models.UploadAudioResponse
 
 
@@ -41,7 +42,7 @@ class AudioRepository(private val apiService: ApiService,
         return handleApiCall {
             executeAuthenticatedRequest { token ->
                 val response = apiService.uploadAudio(
-                    token = "Bearer $token",
+                    token = token,
                     longitude = longitude,
                     latitude = latitude,
                     file = file
@@ -68,11 +69,14 @@ class AudioRepository(private val apiService: ApiService,
         }
     }
 
-    suspend fun getAllRemoteAudios(): Result<List<AudioEntity>> {
+    suspend fun getAllRemoteAudios(): Result<List<AllAudiosResponse>> {
         return handleApiCall {
-            val response = apiService.getAllSongs()
-            handleRetrofitResponse(response)
+            executeAuthenticatedRequest { token ->
+                val response = apiService.getAllSongs(token)
+                handleRetrofitResponse(response)
+            }
         }
+
     }
 
     /**
@@ -91,7 +95,8 @@ class AudioRepository(private val apiService: ApiService,
      * Esegue una richiesta autenticata recuperando il token dal TokenManager.
      */
     private suspend fun <T> executeAuthenticatedRequest(request: suspend (String) -> Result<T>): Result<T> {
-        val token = tokenManager.getToken() ?: return Result.failure(Exception("Token scaduto o non disponibile"))
+        var token = tokenManager.getToken() ?: return Result.failure(Exception("Token scaduto o non disponibile"))
+        token = "Bearer $token"
         return request(token)
     }
 

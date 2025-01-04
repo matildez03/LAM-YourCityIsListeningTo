@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "4a9325f18f164620507afa0da45136f3",
+    "identityHash": "225fb680661d45230514ac3accd15323",
     "entities": [
       {
         "tableName": "audio",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `username` TEXT, `filePath` TEXT NOT NULL, `bpm` INTEGER NOT NULL, `danceability` REAL NOT NULL, `loudness` REAL NOT NULL, `mood` TEXT NOT NULL, `genre` TEXT NOT NULL, `instrument` TEXT NOT NULL, `latitude` REAL NOT NULL, `longitude` REAL NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `username` TEXT, `locationName` TEXT, `filePath` TEXT, `bpm` INTEGER, `danceability` REAL, `loudness` REAL, `mood` TEXT, `genre` TEXT, `instrument` TEXT, `latitude` REAL, `longitude` REAL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -21,58 +21,64 @@
             "notNull": false
           },
           {
+            "fieldPath": "locationName",
+            "columnName": "locationName",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
             "fieldPath": "filePath",
             "columnName": "filePath",
             "affinity": "TEXT",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "bpm",
             "columnName": "bpm",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "danceability",
             "columnName": "danceability",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "loudness",
             "columnName": "loudness",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "mood",
             "columnName": "mood",
             "affinity": "TEXT",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "genre",
             "columnName": "genre",
             "affinity": "TEXT",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "instrument",
             "columnName": "instrument",
             "affinity": "TEXT",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "latitude",
             "columnName": "latitude",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "longitude",
             "columnName": "longitude",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": false
           }
         ],
         "primaryKey": {
@@ -88,7 +94,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4a9325f18f164620507afa0da45136f3')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '225fb680661d45230514ac3accd15323')"
     ]
   }
 }
