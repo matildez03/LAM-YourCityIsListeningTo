@@ -1,6 +1,10 @@
 package uni.matilde.lam01.ui.audio
 
 import android.Manifest
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -57,7 +61,6 @@ fun AudioRecordingDialog(
 
     // Stati per la registrazione
     val isRecording by audioViewModel.isRecording.collectAsState()
-    var decibelLevel by remember { mutableStateOf(0) }
 
     // Stati per i permessi
     val hasRecordAudioPermission by audioViewModel.hasAudiorecordPermission.collectAsState()
@@ -66,6 +69,9 @@ fun AudioRecordingDialog(
 
     val mp3AudioPath by audioViewModel.mp3AudioPath.collectAsState()
     val errorMessage by audioViewModel.errorMessage.observeAsState()
+
+    var showWifiDialog by remember { mutableStateOf(false) }
+
 
     // Launcher per il permesso di registrazione audio
     val recordAudioLauncher = rememberLauncherForActivityResult(
@@ -134,18 +140,66 @@ fun AudioRecordingDialog(
                 onDismiss() // Chiudi il dialogo di registrazione
                 onUploadSuccess() // Mostra il dialogo di successo del caricamento
             } else {
-                Toast.makeText(context, "Errore durante il caricamento dell'audio.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    "Errore durante il caricamento dell'audio.",
+                    Toast.LENGTH_SHORT
+                ).show()
                 audioViewModel.clearUploadStatus()
             }
         }
+    }
+
+    // AlertDialog per il caricamento
+    if (showWifiDialog) {
+        AlertDialog(
+            onDismissRequest = { showWifiDialog = false },
+            title = { Text("Stai utilizzando la connessione dati") },
+            text = { Text("Vuoi attendere una connessione Wi-Fi per completare il caricamento?") },
+            confirmButton = {
+                Button(onClick = {
+                    // Logica per attendere la connessione Wi-Fi
+                    //TODO: implementa
+                    Toast.makeText(context, "Caricamento posticipato", Toast.LENGTH_SHORT).show()
+                    showWifiDialog = false
+                }) {
+                    Text("Attendi")
+                }
+            },
+            dismissButton = {
+                Button(onClick = {
+                    // Procede con la connessione dati
+                    if (mp3AudioPath != null) {
+                        audioViewModel.uploadAudio(
+                            username,
+                            mp3AudioPath!!,
+                            userLocation.latitude,
+                            userLocation.longitude,
+                            locationName
+                        )
+                        Toast.makeText(
+                            context,
+                            "Caricamento in corso con connessione dati",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    showWifiDialog = false
+                }) {
+                    Text("Procedi")
+                }
+            }
+        )
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Registra e Riascolta") },
         text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                Text(locationName?:userLocation.toString()) //nome posizione
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(locationName ?: userLocation.toString()) //nome posizione
                 // Mostra la durata della registrazione
                 if (isRecording) {
                     Text(
@@ -188,56 +242,66 @@ fun AudioRecordingDialog(
                 }
 
                 //INIZIA REGITRAZIONE
-                Button(onClick = {
-                    // Button di start
-                    if (!isRecording) {
-                        if (!hasRecordAudioPermission || !hasWriteExPermission) {
-                            Toast.makeText(
-                                context,
-                                "Concedi i permessi di registrazione e l'accesso ai file per procedere!",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        } else {
-                            val success =
-                                audioViewModel.startRecording(context, userLocation, username)
-                            if (!success) {
+                Button(
+                    onClick = {
+                        // Button di start
+                        if (!isRecording) {
+                            if (!hasRecordAudioPermission || !hasWriteExPermission) {
                                 Toast.makeText(
                                     context,
-                                    "Errore durante l'avvio della registrazione",
+                                    "Concedi i permessi di registrazione e l'accesso ai file per procedere!",
                                     Toast.LENGTH_SHORT
                                 ).show()
                             } else {
-                                Toast.makeText(context, "Registrazione avviata", Toast.LENGTH_SHORT)
-                                    .show()
+                                val success =
+                                    audioViewModel.startRecording(context, userLocation, username)
+                                if (!success) {
+                                    Toast.makeText(
+                                        context,
+                                        "Errore durante l'avvio della registrazione",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Registrazione avviata",
+                                        Toast.LENGTH_SHORT
+                                    )
+                                        .show()
+                                }
+                            }
+                        } else {
+                            // Button di interruzione
+                            val mp3FilePath = audioViewModel.stopRecording(context)
+                            if (mp3FilePath == null) {
+                                Toast.makeText(
+                                    context,
+                                    "Errore durante l'interruzione della registrazione",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Registrazione completata",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
-                    } else {
-                        // Button di interruzione
-                        val mp3FilePath = audioViewModel.stopRecording(context)
-                        if (mp3FilePath == null) {
-                            Toast.makeText(
-                                context,
-                                "Errore durante l'interruzione della registrazione",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        } else {
-                            Toast.makeText(
-                                context,
-                                "Registrazione completata",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                    }, colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        if (isRecording) "Interrompi Registrazione" else {
+                            if (mp3AudioPath == null) "Inizia Registrazione" else "Riprova"
                         }
-                    }
-                }, colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White
-                )) {
-                    Text(if (isRecording) "Interrompi Registrazione" else{ if(mp3AudioPath==null) "Inizia Registrazione" else "Riprova"})
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                if (mp3AudioPath!=null) {
+                if (mp3AudioPath != null) {
                     Text(
                         text = "Durata: ${recordingDuration}s",
                         modifier = Modifier.padding(8.dp)
@@ -245,16 +309,25 @@ fun AudioRecordingDialog(
                 }
 
                 // RIASCOLTA
-                Button(onClick = {
-                    if(!hasReadExPermission){
-                        Toast.makeText(context, "Concedi i permessi di lettura file per procedere!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        mp3AudioPath?.let { path ->
-                            audioViewModel.playRecording(context, path)
-                        } ?: Toast.makeText(context, "Nessun file disponibile per la riproduzione", Toast.LENGTH_SHORT).show()
-                    }
-                },
-                    enabled = (mp3AudioPath!=null),
+                Button(
+                    onClick = {
+                        if (!hasReadExPermission) {
+                            Toast.makeText(
+                                context,
+                                "Concedi i permessi di lettura file per procedere!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            mp3AudioPath?.let { path ->
+                                audioViewModel.playRecording(context, path)
+                            } ?: Toast.makeText(
+                                context,
+                                "Nessun file disponibile per la riproduzione",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    },
+                    enabled = (mp3AudioPath != null),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.secondary,
                         contentColor = Color.White
@@ -267,19 +340,24 @@ fun AudioRecordingDialog(
         },
         confirmButton = {
             Button(onClick = {
-                if(mp3AudioPath!=null) {
-                    audioViewModel.clearUploadStatus()
-                    audioViewModel.uploadAudio(
-                        username,
-                        mp3AudioPath!!,
-                        userLocation.latitude,
-                        userLocation.longitude,
-                        locationName
-                    )
-                    Log.d("AudioViewModel", "Caricamento dell'audio: ${mp3AudioPath}")
+                if (mp3AudioPath != null) {
+                    //controlla connessione wi fi
+                    if (!isConnectedToWifi(context)) {
+                        showWifiDialog = true
+                    } else {
+                        audioViewModel.clearUploadStatus()
+                        audioViewModel.uploadAudio(
+                            username,
+                            mp3AudioPath!!,
+                            userLocation.latitude,
+                            userLocation.longitude,
+                            locationName
+                        )
+                        Log.d("AudioViewModel", "Caricamento dell'audio: ${mp3AudioPath}")
+                    }
                 }
-            } ,
-                enabled = (!isRecording && mp3AudioPath!=null),
+            },
+                enabled = (!isRecording && mp3AudioPath != null),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = Color.White
@@ -289,17 +367,34 @@ fun AudioRecordingDialog(
             }
         },
         dismissButton = {
-            Button(onClick = {
-                onDismiss()
-            }, colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.tertiary,
-                contentColor = Color.White
-            )) {
+            Button(
+                onClick = {
+                    onDismiss()
+                }, colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = Color.White
+                )
+            ) {
                 Text("Annulla")
             }
         }
     )
 
+}
+
+fun isConnectedToWifi(context: Context): Boolean {
+    val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val network = connectivityManager.activeNetwork ?: return false
+        val networkCapabilities =
+            connectivityManager.getNetworkCapabilities(network) ?: return false
+        return networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+    } else {
+        val networkInfo = connectivityManager.activeNetworkInfo
+        return networkInfo != null && networkInfo.type == ConnectivityManager.TYPE_WIFI
+    }
 }
 
 
