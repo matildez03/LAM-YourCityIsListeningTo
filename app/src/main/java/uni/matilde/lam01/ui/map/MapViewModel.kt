@@ -16,7 +16,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import uni.matilde.lam01.data.remote.models.AudioResponse
 import uni.matilde.lam01.data.remote.repository.AudioRepository
+import uni.matilde.lam01.data.remote.repository.MapRepository
 import uni.matilde.lam01.ui.audio.AudioViewModel
 import uni.matilde.lam01.ui.auth.AuthState
 import java.io.File
@@ -27,7 +29,7 @@ data class MapMarker(
     val audioId: Int
 )
 
-class MapViewModel(private val audioRepository: AudioRepository) : ViewModel() {
+class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
 
     // LiveData per la posizione dell'utente
     private val _userLocation = MutableLiveData<LatLng?>()
@@ -42,6 +44,9 @@ class MapViewModel(private val audioRepository: AudioRepository) : ViewModel() {
 
     private val _locationName = MutableLiveData<String>()
     val locationName: LiveData<String> get() = _locationName
+
+    private val _audio = MutableLiveData<AudioResponse>()
+    val audio: LiveData<AudioResponse> get() = _audio
 
     fun checkLocationPermission(context: Context) {
         viewModelScope.launch {
@@ -58,43 +63,39 @@ class MapViewModel(private val audioRepository: AudioRepository) : ViewModel() {
      */
     fun fetchLocationName(context: Context, latitude: Double, longitude: Double) {
         viewModelScope.launch {
-            val name = withContext(Dispatchers.IO) {
-                try {
-                    val geocoder = Geocoder(context, Locale.getDefault())
-                    val addresses = geocoder.getFromLocation(latitude, longitude, 1)
-                    if (!addresses.isNullOrEmpty()) {
-                        addresses[0].getAddressLine(0)
-                    } else {
-                        "Posizione sconosciuta"
-                    }
-                } catch (e: Exception) {
-                    Log.e("GeocoderError", "Errore durante la geocodifica: ${e.message}")
-                    "Errore durante la geocodifica"
+            _locationName.postValue(getLocationName(context,latitude,longitude))
+        }
+    }
+
+    suspend fun getLocationName(context: Context, latitude: Double, longitude: Double): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val geocoder = Geocoder(context, Locale.getDefault())
+                val addresses = geocoder.getFromLocation(latitude, longitude, 1)
+                if (!addresses.isNullOrEmpty()) {
+                    addresses[0].getAddressLine(0)
+                } else {
+                    "Posizione sconosciuta"
                 }
+            } catch (e: Exception) {
+                Log.e("GeocoderError", "Errore durante la geocodifica: ${e.message}")
+                "Errore durante la geocodifica"
             }
-            _locationName.postValue(name)
         }
     }
 
 
+
     fun fetchMarkers() {
         viewModelScope.launch {
-            val result = audioRepository.getAllRemoteAudios()
+            val result = mapRepository.getMarkers()
             if (result.isSuccess) {
-                val audios = result.getOrNull()
-                Log.d("MapViewModel", "Fetch all audios effettuato con succeso: ${audios?.size}")
-
-                // Mappa ogni audio ricevuto in un oggetto MapMarker
-                val tempMarkers = audios?.map { audio ->
-                    MapMarker(
-                        position = LatLng(audio.latitude, audio.longitude),
-                        audioId = audio.id
-                    )
-                } ?: emptyList()
-                _markers.postValue(tempMarkers)// Aggiorna i marker nel LiveData
-                Log.d("MapViewModel", "Markers aggiornati")
+                val tempMarkers = result.getOrNull()
+                tempMarkers?.let {
+                    _markers.postValue(it)
+                }
             } else {
-                Log.e("MapViewModel", "Errore nel recupero degli audios")
+                Log.e("MapViewModel", "Errore nel recupero dei markers")
             }
         }
     }
@@ -170,4 +171,17 @@ class MapViewModel(private val audioRepository: AudioRepository) : ViewModel() {
         _userLocation.postValue(location) // Aggiorna il valore della posizione utente
     }
 
+    fun getAudioInfo(audioId: Int) {
+        viewModelScope.launch {
+            val result = mapRepository.getAudioInfo(audioId)
+            if (result.isSuccess) {
+                val tempAudio = result.getOrNull()
+                tempAudio?.let {
+                    _audio.postValue(it)
+                }
+            } else {
+                Log.e("MapViewModel", "Errore nel recupero dell'audio con id $audioId")
+            }
+        }
+    }
 }

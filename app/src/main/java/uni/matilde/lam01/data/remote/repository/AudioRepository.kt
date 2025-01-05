@@ -10,6 +10,7 @@ import uni.matilde.lam01.data.local.AudioEntity
 import retrofit2.Response
 import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.data.remote.models.AllAudiosResponse
+import uni.matilde.lam01.data.remote.models.AudioResponse
 import uni.matilde.lam01.data.remote.models.UploadAudioResponse
 
 
@@ -76,7 +77,15 @@ class AudioRepository(private val apiService: ApiService,
                 handleRetrofitResponse(response)
             }
         }
+    }
 
+    suspend fun fetchAudioById(audioInt: Int): Result<AudioResponse>{
+        return handleApiCall {
+            executeAuthenticatedRequest { token ->
+                val response = apiService.getAudioById(token, audioInt)
+                handleRetrofitResponse(response)
+            }
+        }
     }
 
     /**

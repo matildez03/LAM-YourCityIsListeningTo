@@ -26,7 +26,7 @@ fun AppNavHost(
     val navController = rememberNavController()
 
     // Ottiene l'istanza di MapViewModel
-    val mapViewModelFactory = MapViewModelFactory(App.instance.audioRepository)
+    val mapViewModelFactory = MapViewModelFactory(App.instance.mapRepository)
     val mapViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
         modelClass = MapViewModel::class.java,
         factory = mapViewModelFactory

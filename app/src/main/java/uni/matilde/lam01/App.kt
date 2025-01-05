@@ -7,6 +7,7 @@ import uni.matilde.lam01.data.TokenManager
 import uni.matilde.lam01.data.local.AppDatabase
 import uni.matilde.lam01.data.remote.repository.AudioRepository
 import uni.matilde.lam01.data.remote.repository.AuthRepository
+import uni.matilde.lam01.data.remote.repository.MapRepository
 import uni.matilde.lam01.util.recorder.AndroidAudioRecorder
 
 class App : Application() {
@@ -18,6 +19,9 @@ class App : Application() {
         private set
 
     lateinit var audioRepository: AudioRepository
+        private set
+
+    lateinit var mapRepository: MapRepository
         private set
 
     lateinit var tokenManager: TokenManager
@@ -46,6 +50,8 @@ class App : Application() {
             tokenManager = tokenManager,
             audioDao = appDatabase.audioDao()
         )
+
+        mapRepository = MapRepository.getInstance(audioRepository = audioRepository)
 
     }
 

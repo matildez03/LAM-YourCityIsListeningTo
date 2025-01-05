@@ -10,10 +10,10 @@ data class AudioResponse(
 )
 
 data class Tags(
-    val bpm: Int,
-    val danceability: Double,
-    val loudness: Double,
-    val mood: Map<String, Double>,
-    val genre: Map<String, Double>,
-    val instrument: Map<String, Double>
+    val bpm: Int?,
+    val danceability: Double?,
+    val loudness: Double?,
+    val mood: Map<String, Double>?,
+    val genre: Map<String, Double>?,
+    val instrument: Map<String, Double>?
 )
