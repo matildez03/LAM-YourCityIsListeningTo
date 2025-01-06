@@ -48,6 +48,9 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
     private val _audio = MutableLiveData<AudioResponse>()
     val audio: LiveData<AudioResponse> get() = _audio
 
+    private val _errorMessage = MutableLiveData<String>()
+    val errorMessage: LiveData<String> get() = _errorMessage
+
     fun checkLocationPermission(context: Context) {
         viewModelScope.launch {
             _hasLocationPermission.value = ContextCompat.checkSelfPermission(
@@ -96,6 +99,22 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
                 }
             } else {
                 Log.e("MapViewModel", "Errore nel recupero dei markers")
+            }
+        }
+    }
+
+    fun fetchMarkersByGenre(genre: String){
+        viewModelScope.launch {
+            if(_markers != null){
+                val result = mapRepository.getMarkersByGenre(markers.value!!, genre).getOrNull()
+                if(result !=null) {
+                    _markers.postValue(result!!)
+                }
+                else{
+                    _errorMessage.postValue("Non ci sono risultati dal tuo filtro!")
+                }
+            } else{
+                Log.e("MapViewModel","Impossibile trovare i markers filtrati: val markers is null")
             }
         }
     }

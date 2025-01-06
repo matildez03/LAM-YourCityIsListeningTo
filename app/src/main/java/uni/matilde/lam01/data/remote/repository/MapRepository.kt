@@ -48,6 +48,34 @@ class MapRepository(private val audioRepository: AudioRepository) {
         }
     }
 
+
+    suspend fun getMarkersByGenre(markers: List<MapMarker>, genre: String): Result<List<MapMarker>> {
+        return try {
+            val filteredMarkers = mutableListOf<MapMarker>() // Lista per accumulare i risultati
+
+            // Itera su ogni marker
+            for (marker in markers) {
+                val audioId = marker.audioId
+                val audioInfo = getAudioInfo(audioId).getOrNull() // Recupera le informazioni sull'audio
+
+                // Filtra per genere
+                if (audioInfo != null && audioInfo.tags.genre?.maxByOrNull {it.value }?.key== genre) {
+                    filteredMarkers.add(
+                        MapMarker(
+                            position = LatLng(audioInfo.latitude, audioInfo.longitude),
+                            audioId = audioInfo.id
+                        )
+                    )
+                }
+            }
+            // Ritorna la lista dei marker filtrati
+            Result.success(filteredMarkers)
+        } catch (e: Exception) {
+            Result.failure(e) // Gestione degli errori
+        }
+    }
+
+
     // Ottieni informazioni specifiche di un audio
     suspend fun getAudioInfo(audioId: Int): Result<AudioResponse> {
         return audioRepository.fetchAudioById(audioId)

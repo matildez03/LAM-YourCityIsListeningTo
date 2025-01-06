@@ -36,6 +36,7 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.ui.Alignment
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -72,6 +73,7 @@ fun MainMapScreen(
     val mapProperties = remember { MapProperties(isMyLocationEnabled = true) }
     var showRecordingDialog by remember { mutableStateOf(false) } // Stato per il popup
     var showUploadResultDialog by remember { mutableStateOf(false) }
+    val errorMessage by viewModel.errorMessage.observeAsState()
     val hasLocationPermission by viewModel.hasLocationPermission.collectAsState()
     // Ottenere il nome della posizione
     val locationName by viewModel.locationName.observeAsState("Posizione sconosciuta")
@@ -80,6 +82,7 @@ fun MainMapScreen(
     var selectedAudio by remember { mutableStateOf<AudioResponse?>(null) }
     var selectedLocationName by remember { mutableStateOf<String?>(null) }
     val bottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
+    var filterText by remember { mutableStateOf("") }
 
 
     // Launcher per richiedere i permessi
@@ -129,6 +132,10 @@ fun MainMapScreen(
         } catch (e: Exception) {
             Log.e("GeocoderError", "Errore durante la geocodifica: ${e.message}")
         }
+    }
+
+    LaunchedEffect(errorMessage) {
+        Toast.makeText(context,errorMessage,Toast.LENGTH_SHORT).show()
     }
 
 
@@ -198,6 +205,25 @@ fun MainMapScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
+                    TextField(
+                        value = filterText,
+                        onValueChange = { text ->
+                            filterText = text
+                        },
+                        label = { Text("Filtra per genere") },
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp) // Margine a destra per separare dal pulsante
+                    )
+
+                    Button(
+                        onClick = {
+                            viewModel.fetchMarkersByGenre(filterText) // Avvia la ricerca
+                        },
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Text("Cerca")
+                    }
                     GoogleMap(
                         modifier = Modifier.weight(1f),
                         cameraPositionState = cameraPositionState,
