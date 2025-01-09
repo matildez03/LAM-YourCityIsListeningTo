@@ -39,6 +39,9 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
     private val _markers = MutableLiveData<List<MapMarker>>()
     val markers: LiveData<List<MapMarker>> get() = _markers
 
+    private val _filteredMarkers = MutableLiveData<List<MapMarker>>()
+    val filteredMarkers: LiveData<List<MapMarker>> get() = _filteredMarkers
+
     private val _hasLocationPermission = MutableStateFlow(false)
     val hasLocationPermission: StateFlow<Boolean> = _hasLocationPermission
 
@@ -89,7 +92,7 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
 
 
 
-    fun fetchMarkers() {
+    fun fetchAllMarkers() {
         viewModelScope.launch {
             val result = mapRepository.getMarkers()
             if (result.isSuccess) {
@@ -119,71 +122,58 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
         }
     }
 
+    fun fetchFilteredMarkers(filter: String){
+        viewModelScope.launch {
+            if(_markers != null){
+                val result = mapRepository.getFilteredMarkers(markers.value!!, filter).getOrNull()
+                if(result !=null) {
+                    _markers.postValue(result!!)
+                }
+                else{
+                    _errorMessage.postValue("Non ci sono risultati dal tuo filtro!")
+                }
+            } else{
+                Log.e("MapViewModel","Impossibile trovare i markers filtrati: val markers is null")
+            }
+        }
+    }
+
 
     // Funzione per caricare i marker vicini alla posizione dell'utente
-    fun fetchMarkersForUserLocation(userLocation: LatLng) {
+    fun fetchMarkersForUserLocation(userLocation: LatLng, radius: Double) {
         viewModelScope.launch {
-            /*
-            // Simula il caricamento dei marker vicini alla posizione dell'utente
-            val nearbyMarkers = listOf(
-                MapMarker(
-                    LatLng(userLocation.latitude + 0.01, userLocation.longitude + 0.01),
-                    "Brano 1",
-                    "Descrizione 1"
-                ),
-                MapMarker(
-                    LatLng(userLocation.latitude - 0.01, userLocation.longitude - 0.01),
-                    "Brano 2",
-                    "Descrizione 2"
-                ),
-                MapMarker(
-                    LatLng(userLocation.latitude + 0.02, userLocation.longitude + 0.02),
-                    "Brano 3",
-                    "Descrizione 3"
-                )
-            )
-            _markers.postValue(nearbyMarkers) // Aggiorna i marker in base alla posizione
-
-             */
-        }
-    }
-
-    fun fetchMarkersForUserLocationAndZoom(userLocation: LatLng, zoomLevel: Float) {
-        viewModelScope.launch {
-            /*
-            // Simula marker diversi in base al livello di zoom
-            val filteredMarkers = if (zoomLevel > 15) {
-                listOf(
-                    MapMarker(
-                        LatLng(userLocation.latitude + 0.001, userLocation.longitude + 0.001),
-                        "Dettaglio 1",
-                        "Zoom alto"
-                    ),
-                    MapMarker(
-                        LatLng(userLocation.latitude - 0.001, userLocation.longitude - 0.001),
-                        "Dettaglio 2",
-                        "Zoom alto"
-                    )
-                )
+            val result = mapRepository.getMarkersNearby(_markers.value.orEmpty(), userLocation, radius)
+            if (result.isSuccess) {
+                val markersResult = result.getOrNull()
+                if(markersResult != null) {
+                    _markers.postValue(markersResult!!)
+                }
             } else {
-                listOf(
-                    MapMarker(
-                        LatLng(userLocation.latitude + 0.01, userLocation.longitude + 0.01),
-                        "Brano 1",
-                        "Zoom basso"
-                    ),
-                    MapMarker(
-                        LatLng(userLocation.latitude - 0.01, userLocation.longitude - 0.01),
-                        "Brano 2",
-                        "Zoom basso"
-                    )
-                )
+                _errorMessage.postValue("Errore nel recupero dei marker vicini.")
+                Log.e("MapViewModel", "Errore: ${result.exceptionOrNull()?.message}")
             }
-            _markers.postValue(filteredMarkers)
-
-             */
         }
     }
+
+    fun fetchMarkersForVisibleArea(center: LatLng, zoomLevel: Float) {
+        viewModelScope.launch {
+            val allMarkers = _markers.value.orEmpty()
+            val result = mapRepository.getMarkersForZoom(allMarkers, center, zoomLevel)
+            if (result.isSuccess) {
+                val markersResult = result.getOrNull()
+                if(markersResult != null) {
+                    _markers.postValue(markersResult!!)
+                }
+            } else {
+                _errorMessage.postValue("Errore nel filtraggio dei marker per l'area visibile.")
+                Log.e("MapViewModel", "Errore: ${result.exceptionOrNull()?.message}")
+            }
+        }
+    }
+
+
+
+
 
 
     fun updateUserLocation(location: LatLng) {
@@ -203,4 +193,5 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
             }
         }
     }
+
 }

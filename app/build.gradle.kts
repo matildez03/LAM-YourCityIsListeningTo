@@ -120,4 +120,9 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.mockito:mockito-core:5.5.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.0.0")
+    androidTestImplementation("org.mockito:mockito-android:5.5.0")
+
+
 }

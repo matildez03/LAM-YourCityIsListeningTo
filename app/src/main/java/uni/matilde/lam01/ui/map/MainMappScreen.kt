@@ -2,32 +2,34 @@ package uni.matilde.lam01.ui.map
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.pm.PackageManager
-import android.location.Geocoder
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.AlertDialog
+import androidx.compose.material.ModalBottomSheetLayout
+import androidx.compose.material.ModalBottomSheetValue
+import androidx.compose.material.TextField
+import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.rememberScaffoldState
-import androidx.compose.material.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.*
-import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
@@ -36,25 +38,46 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.data.remote.models.AudioResponse
-import uni.matilde.lam01.data.remote.repository.AuthRepository
 import uni.matilde.lam01.ui.DrawerContent
 import uni.matilde.lam01.ui.audio.AudioInfoBottomSheet
 import uni.matilde.lam01.ui.audio.AudioRecordingDialog
 import uni.matilde.lam01.ui.audio.AudioViewModel
 import uni.matilde.lam01.ui.auth.AuthViewModel
-import java.util.Locale
+import androidx.compose.ui.tooling.preview.Preview
+
 
 
 @Composable
@@ -108,7 +131,7 @@ fun MainMapScreen(
 
     // Osserva i dati LiveData
     val userLocation by viewModel.userLocation.observeAsState()
-    val markers by viewModel.markers.observeAsState(initial = emptyList())
+    val markers by viewModel.markers.observeAsState()
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
@@ -126,8 +149,7 @@ fun MainMapScreen(
                 )
                 //Assegna un nome alla posizione
                 viewModel.fetchLocationName(context, position.latitude, position.longitude)
-                viewModel.fetchMarkers()
-
+                viewModel.fetchMarkersForUserLocation(position, 1000.0) // Filtra i marker entro 1 km
             }
         } catch (e: Exception) {
             Log.e("GeocoderError", "Errore durante la geocodifica: ${e.message}")
@@ -138,16 +160,15 @@ fun MainMapScreen(
         Toast.makeText(context,errorMessage,Toast.LENGTH_SHORT).show()
     }
 
-
-    //aggiorna i markers in base allo zoom
     LaunchedEffect(cameraPositionState.position) {
-        snapshotFlow { cameraPositionState.position.zoom }
-            .distinctUntilChanged() // Aggiorna solo se il valore dello zoom cambia
-            .debounce(300) // Riduce gli aggiornamenti frequenti
-            .collect { zoomLevel ->
-                userLocation?.let { position ->
-                    viewModel.fetchMarkersForUserLocationAndZoom(position, zoomLevel)
-                } ?: Log.w("MainMapScreen", "Posizione non disponibile.")
+        snapshotFlow { cameraPositionState.position }
+            .distinctUntilChanged()
+            .debounce(300) // Evita aggiornamenti troppo frequenti
+            .collect { cameraPosition ->
+                viewModel.fetchMarkersForVisibleArea(
+                    center = cameraPosition.target, // Centro della mappa
+                    zoomLevel = cameraPosition.zoom // Livello di zoom
+                )
             }
     }
 
@@ -202,28 +223,54 @@ fun MainMapScreen(
             ) { paddingValues ->
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
+                        .fillMaxWidth()
+                        .padding(paddingValues) // Applica il padding fornito da Scaffold
                 ) {
-                    TextField(
-                        value = filterText,
-                        onValueChange = { text ->
-                            filterText = text
-                        },
-                        label = { Text("Filtra per genere") },
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 8.dp) // Margine a destra per separare dal pulsante
-                    )
-
-                    Button(
-                        onClick = {
-                            viewModel.fetchMarkersByGenre(filterText) // Avvia la ricerca
-                        },
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Cerca")
-                    }
+                        //barra di ricerca
+                        TextField(
+                            value = filterText,
+                            onValueChange = { text -> filterText = text },
+                            label = { Text("Filtra") },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Cerca") },
+                            shape = RoundedCornerShape(8.dp),
+                            colors = TextFieldDefaults.textFieldColors(
+                                backgroundColor = Color(0xFFF0F0F0),
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                        )
+
+                        Button(
+                            onClick = { viewModel.fetchFilteredMarkers(filterText) },
+                            shape = CircleShape,
+                            modifier = Modifier.size(48.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Icon(Icons.Default.Search, contentDescription = "Avvia ricerca")
+                        }
+
+                        // Pulsante "Rimuovi filtro"
+                        Button(
+                            onClick = {
+                                filterText = "" // Resetta il campo di testo
+                                userLocation?.let {
+                                    viewModel.fetchMarkersForUserLocation(it, 1000.0) // Filtra i marker entro 1 km
+                                }
+                            },
+                            shape = CircleShape,
+                            modifier = Modifier.size(48.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Rimuovi filtro")
+                        }
+                }
                     GoogleMap(
                         modifier = Modifier.weight(1f),
                         cameraPositionState = cameraPositionState,
@@ -231,7 +278,7 @@ fun MainMapScreen(
                         properties = mapProperties
                     ) {
                         // Aggiunge marker sulla mappa
-                        markers.forEach { marker ->
+                        markers?.forEach { marker ->
                             //TODO:  rimuovere dal main thread?
                             Marker(
                                 state = MarkerState(position = marker.position),
@@ -362,6 +409,5 @@ fun enableLocation(fusedLocationClient: FusedLocationProviderClient, viewModel: 
         }
     }
 }
-
 
 
