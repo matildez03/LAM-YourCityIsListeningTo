@@ -107,6 +107,9 @@ fun MainMapScreen(
         rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     var filterText by remember { mutableStateOf("") }
 
+    val userLocation by viewModel.userLocation.observeAsState()
+    val markers by viewModel.filteredMarkers.observeAsState()
+
 
     // Launcher per richiedere i permessi
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -129,9 +132,7 @@ fun MainMapScreen(
     }
 
 
-    // Osserva i dati LiveData
-    val userLocation by viewModel.userLocation.observeAsState()
-    val markers by viewModel.filteredMarkers.observeAsState()
+
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
@@ -152,7 +153,7 @@ fun MainMapScreen(
                 viewModel.fetchMarkersForUserLocation(
                     position, 1000.0
                 ) // Filtra i marker entro 1 km
-                Log.d("MainMapScreen", "Markers generati in base alla posizione dell'utente")
+                Log.d("MainMapScreen", "Markers generati in base alla posizione dell'utente: ${position.toString()}")
             }
         } catch (e: Exception) {
             Log.e("GeocoderError", "Errore durante la geocodifica: ${e.message}")
@@ -160,7 +161,9 @@ fun MainMapScreen(
     }
 
     LaunchedEffect(errorMessage) {
-        Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+        if(errorMessage !=null && errorMessage?.trim()!="" ) {
+            Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+        }
     }
 
     LaunchedEffect(cameraPositionState.position) {

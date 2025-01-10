@@ -69,7 +69,7 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
      */
     fun fetchLocationName(context: Context, latitude: Double, longitude: Double) {
         viewModelScope.launch {
-            _locationName.postValue(getLocationName(context,latitude,longitude))
+            _locationName.postValue(getLocationName(context, latitude, longitude))
         }
     }
 
@@ -91,7 +91,6 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
     }
 
 
-
     fun fetchAllMarkers() {
         viewModelScope.launch {
             val result = mapRepository.getMarkers()
@@ -107,37 +106,34 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
         }
     }
 
-    fun fetchMarkersByGenre(genre: String){
+    fun fetchMarkersByGenre(genre: String) {
         viewModelScope.launch {
-            if(_markers != null){
+            if (_markers != null) {
                 val result = mapRepository.getMarkersByGenre(markers.value!!, genre).getOrNull()
-                if(result !=null) {
+                if (result != null) {
                     _markers.postValue(result!!)
-                }
-                else{
+                } else {
                     _errorMessage.postValue("Non ci sono risultati dal tuo filtro!")
                 }
                 Log.d("MapViewModel", "Marker caricati: ${_markers.value?.size ?: 0}")
-            } else{
-                Log.e("MapViewModel","Impossibile trovare i markers filtrati: val markers is null")
+            } else {
+                Log.e("MapViewModel", "Impossibile trovare i markers filtrati: val markers is null")
             }
         }
     }
 
-    fun fetchFilteredMarkers(filter: String){
+    fun fetchFilteredMarkers(filter: String) {
         viewModelScope.launch {
-            if(_markers != null){
-                val result = mapRepository.getFilteredMarkers(markers.value!!, filter).getOrNull()
-                if(result !=null) {
-                    _markers.postValue(result!!)
-                }
-                else{
-                    _errorMessage.postValue("Non ci sono risultati dal tuo filtro!")
-                }
-                Log.d("MapViewModel", "Marker caricati: ${_markers.value?.size ?: 0}")
-            } else{
-                Log.e("MapViewModel","Impossibile trovare i markers filtrati: val markers is null")
+            if (_markers.value.isNullOrEmpty()) {
+                fetchAllMarkers()
             }
+            val result = mapRepository.getFilteredMarkers(markers.value!!, filter).getOrNull()
+            if (result != null) {
+                _filteredMarkers.postValue(result!!)
+            } else {
+                _errorMessage.postValue("Non ci sono risultati dal tuo filtro!")
+            }
+            Log.d("MapViewModel", "Marker caricati: ${_filteredMarkers.value?.size ?: 0}")
         }
     }
 
@@ -145,13 +141,18 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
     // Funzione per caricare i marker vicini alla posizione dell'utente
     fun fetchMarkersForUserLocation(userLocation: LatLng, radius: Double) {
         viewModelScope.launch {
-            val result = mapRepository.getMarkersNearby(_markers.value.orEmpty(), userLocation, radius)
+            if (_markers.value.isNullOrEmpty()) {
+                fetchAllMarkers()
+            }
+            Log.d("MapViewModel", "Markers totali: ${_markers.value?.size ?: 0}")
+            val result =
+                mapRepository.getMarkersNearby(_markers.value.orEmpty(), userLocation, radius)
             if (result.isSuccess) {
                 val markersResult = result.getOrNull()
-                if(markersResult != null) {
-                    _markers.postValue(markersResult!!)
+                if (markersResult != null) {
+                    _filteredMarkers.postValue(markersResult!!)
                 }
-                Log.d("MapViewModel", "Marker caricati: ${_markers.value?.size ?: 0}")
+                Log.d("MapViewModel", "Marker caricati: ${_filteredMarkers.value?.size ?: 0}")
             } else {
                 _errorMessage.postValue("Errore nel recupero dei marker vicini.")
                 Log.e("MapViewModel", "Errore: ${result.exceptionOrNull()?.message}")
@@ -161,24 +162,26 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
 
     fun fetchMarkersForVisibleArea(center: LatLng, zoomLevel: Float) {
         viewModelScope.launch {
+            if (_markers.value.isNullOrEmpty()) {
+                fetchAllMarkers()
+            }
             val allMarkers = _markers.value.orEmpty()
             val result = mapRepository.getMarkersForZoom(allMarkers, center, zoomLevel)
             if (result.isSuccess) {
                 val markersResult = result.getOrNull()
-                if(markersResult != null) {
-                    _markers.postValue(markersResult!!)
+                if (markersResult != null) {
+                    _filteredMarkers.postValue(markersResult!!)
                 }
-                Log.d("MapViewModel", "Marker caricati: ${_markers.value?.size ?: 0}")
+                Log.d(
+                    "MapViewModel",
+                    "Marker caricati for visible area: ${_filteredMarkers.value?.size ?: 0}"
+                )
             } else {
                 _errorMessage.postValue("Errore nel filtraggio dei marker per l'area visibile.")
                 Log.e("MapViewModel", "Errore: ${result.exceptionOrNull()?.message}")
             }
         }
     }
-
-
-
-
 
 
     fun updateUserLocation(location: LatLng) {

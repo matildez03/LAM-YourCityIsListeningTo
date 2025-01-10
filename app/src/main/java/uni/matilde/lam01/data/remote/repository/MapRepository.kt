@@ -34,12 +34,14 @@ class MapRepository(private val audioRepository: AudioRepository) {
         return try {
             val result = audioRepository.getAllRemoteAudios()
             if (result.isSuccess) {
+                Log.d("MapRepository","Registrazioni totali: ${result.getOrNull()?.size}")
                 val markers = result.getOrNull()?.map { audio ->
                     MapMarker(
                         position = LatLng(audio.latitude, audio.longitude),
                         audioId = audio.id
                     )
                 } ?: emptyList()
+                Log.d("MapRepository","Markers totali: ${markers.size}")
                 Result.success(markers)
             } else {
                 Result.failure(Exception("Failed to fetch markers"))
