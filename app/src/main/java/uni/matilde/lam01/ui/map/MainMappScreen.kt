@@ -79,7 +79,6 @@ import uni.matilde.lam01.ui.auth.AuthViewModel
 import androidx.compose.ui.tooling.preview.Preview
 
 
-
 @Composable
 fun MainMapScreen(
     viewModel: MapViewModel,
@@ -104,7 +103,8 @@ fun MainMapScreen(
     val coroutineScope = rememberCoroutineScope()
     var selectedAudio by remember { mutableStateOf<AudioResponse?>(null) }
     var selectedLocationName by remember { mutableStateOf<String?>(null) }
-    val bottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
+    val bottomSheetState =
+        rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     var filterText by remember { mutableStateOf("") }
 
 
@@ -131,7 +131,7 @@ fun MainMapScreen(
 
     // Osserva i dati LiveData
     val userLocation by viewModel.userLocation.observeAsState()
-    val markers by viewModel.markers.observeAsState()
+    val markers by viewModel.filteredMarkers.observeAsState()
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
@@ -149,7 +149,10 @@ fun MainMapScreen(
                 )
                 //Assegna un nome alla posizione
                 viewModel.fetchLocationName(context, position.latitude, position.longitude)
-                viewModel.fetchMarkersForUserLocation(position, 1000.0) // Filtra i marker entro 1 km
+                viewModel.fetchMarkersForUserLocation(
+                    position, 1000.0
+                ) // Filtra i marker entro 1 km
+                Log.d("MainMapScreen", "Markers generati in base alla posizione dell'utente")
             }
         } catch (e: Exception) {
             Log.e("GeocoderError", "Errore durante la geocodifica: ${e.message}")
@@ -157,12 +160,11 @@ fun MainMapScreen(
     }
 
     LaunchedEffect(errorMessage) {
-        Toast.makeText(context,errorMessage,Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
     }
 
     LaunchedEffect(cameraPositionState.position) {
-        snapshotFlow { cameraPositionState.position }
-            .distinctUntilChanged()
+        snapshotFlow { cameraPositionState.position }.distinctUntilChanged()
             .debounce(300) // Evita aggiornamenti troppo frequenti
             .collect { cameraPosition ->
                 viewModel.fetchMarkersForVisibleArea(
@@ -170,6 +172,8 @@ fun MainMapScreen(
                     zoomLevel = cameraPosition.zoom // Livello di zoom
                 )
             }
+        Log.d("MainMapScreen", "Markers generati in base alla posizione della videocamera")
+
     }
 
 
@@ -177,50 +181,36 @@ fun MainMapScreen(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
+    ModalNavigationDrawer(drawerState = drawerState,
         gesturesEnabled = false, // Disabilita l'apertura tramite gesture
         drawerContent = {
             DrawerContent(
-                navController,
-                onClose = {
+                navController, onClose = {
                     scope.launch { drawerState.close() }
-                },
-                authViewModel = authViewModel
+                }, authViewModel = authViewModel
             )
-        }
-    )
-    {
-        ModalBottomSheetLayout(
-            sheetState = bottomSheetState,
-            sheetContent = {
-                selectedAudio?.let { audio ->
-                    AudioInfoBottomSheet(
-                        audio = audio,
-                        locationName = selectedLocationName ?: "Posizione sconosciuta"
-                    )
-                }
+        }) {
+        ModalBottomSheetLayout(sheetState = bottomSheetState, sheetContent = {
+            selectedAudio?.let { audio ->
+                AudioInfoBottomSheet(
+                    audio = audio,
+                    locationName = selectedLocationName ?: "Posizione sconosciuta"
+                )
             }
-        )
-        {
+        }) {
 
-            Scaffold(
-                topBar = @androidx.compose.runtime.Composable {
-                    TopAppBar(
-                        title = { Text("Mappa") },
-                        navigationIcon = {
-                            IconButton(onClick = {
-                                scope.launch {
-                                    drawerState.open()
-                                }
-                                Log.d("click event", "Button di apertura menù cliccato")
-                            }) {
-                                Icon(Icons.Default.Menu, contentDescription = "Apri Menù")
-                            }
+            Scaffold(topBar = @androidx.compose.runtime.Composable {
+                TopAppBar(title = { Text("Mappa") }, navigationIcon = {
+                    IconButton(onClick = {
+                        scope.launch {
+                            drawerState.open()
                         }
-                    )
-                }
-            ) { paddingValues ->
+                        Log.d("click event", "Button di apertura menù cliccato")
+                    }) {
+                        Icon(Icons.Default.Menu, contentDescription = "Apri Menù")
+                    }
+                })
+            }) { paddingValues ->
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -235,7 +225,11 @@ fun MainMapScreen(
                             value = filterText,
                             onValueChange = { text -> filterText = text },
                             label = { Text("Filtra") },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Cerca") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Search, contentDescription = "Cerca"
+                                )
+                            },
                             shape = RoundedCornerShape(8.dp),
                             colors = TextFieldDefaults.textFieldColors(
                                 backgroundColor = Color(0xFFF0F0F0),
@@ -261,7 +255,9 @@ fun MainMapScreen(
                             onClick = {
                                 filterText = "" // Resetta il campo di testo
                                 userLocation?.let {
-                                    viewModel.fetchMarkersForUserLocation(it, 1000.0) // Filtra i marker entro 1 km
+                                    viewModel.fetchMarkersForUserLocation(
+                                        it, 1000.0
+                                    ) // Filtra i marker entro 1 km
                                 }
                             },
                             shape = CircleShape,
@@ -270,54 +266,67 @@ fun MainMapScreen(
                         ) {
                             Icon(Icons.Default.Close, contentDescription = "Rimuovi filtro")
                         }
-                }
+                    }
+                    Log.d("MainMapScreen", "Prima di GoogleMap")
                     GoogleMap(
                         modifier = Modifier.weight(1f),
                         cameraPositionState = cameraPositionState,
                         uiSettings = mapUiSettings,
                         properties = mapProperties
                     ) {
-                        // Aggiunge marker sulla mappa
-                        markers?.forEach { marker ->
-                            //TODO:  rimuovere dal main thread?
-                            Marker(
-                                state = MarkerState(position = marker.position),
-                                //title = "Posizione marker",
-                                snippet = "Dettagli registrazione",
-                                onClick = {
-                                    coroutineScope.launch {
-                                        // Ottieni il nome della posizione in una coroutine
-                                        val positionName = viewModel.getLocationName(
-                                            context = context,
-                                            latitude = marker.position.latitude,
-                                            longitude = marker.position.longitude
-                                        )
+                        Log.d("MainMapScreen", "Dentro GoogleMap")
 
-                                        viewModel.getAudioInfo(marker.audioId)
-                                        audioResponse?.let { it1 ->
-                                            onMarkerClick(it1, positionName)
-                                            Log.d(
-                                                "MainMapScreen",
-                                                "informazioni ottenute: ${it.toString()}"
-                                            )
-                                        }
+                        if (markers.isNullOrEmpty()) {
+                            Log.d("MainMapScreen", "Nessun marker disponibile")
+                            Toast.makeText(context,"Nessun marker disponibile", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Log.d("MainMapScreen", "Inizio caricamento markers")
+                            // Aggiunge marker sulla mappa
+                            markers?.forEach { marker ->
+                                //TODO:  rimuovere dal main thread?
+                                Log.d("GoogleMapDebug", "Marker posizione: ${marker.position}")
+                                if (marker.position.latitude.isNaN() || marker.position.longitude.isNaN()) {
+                                    Log.e("MainMapScreen", "Marker non valido: ${marker.audioId}")
+                                } else {
+                                    Marker(state = MarkerState(position = marker.position),
+                                        //title = "Posizione marker",
+                                        snippet = "Dettagli registrazione", onClick = {
+                                            coroutineScope.launch {
+                                                // Ottieni il nome della posizione in una coroutine
+                                                val positionName = viewModel.getLocationName(
+                                                    context = context,
+                                                    latitude = marker.position.latitude,
+                                                    longitude = marker.position.longitude
+                                                )
 
-                                        if (audioResponse != null) {
-                                            selectedAudio = audioResponse
-                                            selectedLocationName = positionName
-                                            bottomSheetState.show()
-                                        } else {
-                                            Toast.makeText(
-                                                context,
-                                                "Impossibile caricare le informaioni del brano.",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                        Log.d("Marker", "Marker cliccato: ${marker.position}")
-                                    }
-                                    false // Ritorna false per mantenere il comportamento predefinito del marker
+                                                viewModel.getAudioInfo(marker.audioId)
+                                                audioResponse?.let { it1 ->
+                                                    onMarkerClick(it1, positionName)
+                                                    Log.d(
+                                                        "MainMapScreen",
+                                                        "informazioni ottenute: ${it.toString()}"
+                                                    )
+                                                }
+
+                                                if (audioResponse != null) {
+                                                    selectedAudio = audioResponse
+                                                    selectedLocationName = positionName
+                                                    bottomSheetState.show()
+                                                } else {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Impossibile caricare le informaioni del brano.",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                                Log.d(
+                                                    "Marker", "Marker cliccato: ${marker.position}"
+                                                )
+                                            }
+                                            false // Ritorna false per mantenere il comportamento predefinito del marker
+                                        })
                                 }
-                            )
+                            }
                         }
                         Log.d("MainMapScreen", "Eventuali markers caricati") //debug
                     }
@@ -341,11 +350,10 @@ fun MainMapScreen(
                 // Popup di registrazione
                 if (showRecordingDialog) {
                     userLocation?.let {
-                        AudioRecordingDialog(
-                            onDismiss = {
-                                showRecordingDialog = false
-                                audioViewModel.clearStates()
-                            },
+                        AudioRecordingDialog(onDismiss = {
+                            showRecordingDialog = false
+                            audioViewModel.clearStates()
+                        },
                             onUploadSuccess = {
                                 showUploadResultDialog = true
                             } // Mostra il dialogo del risultato
@@ -359,8 +367,7 @@ fun MainMapScreen(
 
                 // Dialogo per il risultato del caricamento
                 if (showUploadResultDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showUploadResultDialog = false },
+                    AlertDialog(onDismissRequest = { showUploadResultDialog = false },
                         title = { Text("Caricamento completato!") },
                         text = {
                             Column(
@@ -383,15 +390,14 @@ fun MainMapScreen(
                             Button(onClick = { showUploadResultDialog = false }) {
                                 Text("OK")
                             }
-                        }
-                    )
+                        })
                 }
             }
         }
     }
 }
 
-fun onMarkerClick(audioInfo:AudioResponse, positionName: String) {
+fun onMarkerClick(audioInfo: AudioResponse, positionName: String) {
 
 }
 

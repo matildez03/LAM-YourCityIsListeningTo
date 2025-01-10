@@ -1,5 +1,6 @@
 package uni.matilde.lam01.data.remote.repository
 
+import android.util.Log
 import com.google.android.gms.maps.model.LatLng
 import uni.matilde.lam01.api.ApiService
 import uni.matilde.lam01.data.TokenManager
@@ -58,6 +59,7 @@ class MapRepository(private val audioRepository: AudioRepository) {
                     marker.position.longitude
                 ) <= radius
             }
+            Log.d("MapRepository", "Marker caricati: ${nearbyMarkers.size}")
             Result.success(nearbyMarkers)
         } catch (e: Exception) {
             Result.failure(e)
@@ -79,6 +81,7 @@ class MapRepository(private val audioRepository: AudioRepository) {
                     marker.position.longitude
                 ) <= radius
             }
+            Log.d("MapRepository", "Marker caricati: ${filteredMarkers.size}")
             Result.success(filteredMarkers)
         } catch (e: Exception) {
             Result.failure(e)
@@ -110,8 +113,10 @@ class MapRepository(private val audioRepository: AudioRepository) {
                     )
                 }
             }
+            Log.d("MapRepository", "Marker caricati: ${filteredMarkers.size}")
             // Ritorna la lista dei marker filtrati
             Result.success(filteredMarkers)
+
         } catch (e: Exception) {
             Result.failure(e) // Gestione degli errori
         }
@@ -145,6 +150,8 @@ class MapRepository(private val audioRepository: AudioRepository) {
                     }
                 }
             }
+            Log.d("MapRepository", "Marker caricati: ${filteredMarkers.size}")
+
             // Ritorna la lista dei marker filtrati
             Result.success(filteredMarkers)
         } catch (e: Exception) {

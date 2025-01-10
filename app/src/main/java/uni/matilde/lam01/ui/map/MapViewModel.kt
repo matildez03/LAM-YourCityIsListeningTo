@@ -100,6 +100,7 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
                 tempMarkers?.let {
                     _markers.postValue(it)
                 }
+                Log.d("MapViewModel", "Marker caricati: ${_markers.value?.size ?: 0}")
             } else {
                 Log.e("MapViewModel", "Errore nel recupero dei markers")
             }
@@ -116,6 +117,7 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
                 else{
                     _errorMessage.postValue("Non ci sono risultati dal tuo filtro!")
                 }
+                Log.d("MapViewModel", "Marker caricati: ${_markers.value?.size ?: 0}")
             } else{
                 Log.e("MapViewModel","Impossibile trovare i markers filtrati: val markers is null")
             }
@@ -132,6 +134,7 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
                 else{
                     _errorMessage.postValue("Non ci sono risultati dal tuo filtro!")
                 }
+                Log.d("MapViewModel", "Marker caricati: ${_markers.value?.size ?: 0}")
             } else{
                 Log.e("MapViewModel","Impossibile trovare i markers filtrati: val markers is null")
             }
@@ -148,6 +151,7 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
                 if(markersResult != null) {
                     _markers.postValue(markersResult!!)
                 }
+                Log.d("MapViewModel", "Marker caricati: ${_markers.value?.size ?: 0}")
             } else {
                 _errorMessage.postValue("Errore nel recupero dei marker vicini.")
                 Log.e("MapViewModel", "Errore: ${result.exceptionOrNull()?.message}")
@@ -164,6 +168,7 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
                 if(markersResult != null) {
                     _markers.postValue(markersResult!!)
                 }
+                Log.d("MapViewModel", "Marker caricati: ${_markers.value?.size ?: 0}")
             } else {
                 _errorMessage.postValue("Errore nel filtraggio dei marker per l'area visibile.")
                 Log.e("MapViewModel", "Errore: ${result.exceptionOrNull()?.message}")
