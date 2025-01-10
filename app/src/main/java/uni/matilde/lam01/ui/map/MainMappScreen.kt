@@ -156,10 +156,6 @@ fun MainMapScreen(
                     "MainMapScreen",
                     "Markers generati in base alla posizione dell'utente: ${position.toString()}"
                 )
-                if (markers.isNullOrEmpty()) {
-                    Log.d("MainMapScreen", "Nessun marker disponibile")
-                    Toast.makeText(context, "Nessun marker disponibile", Toast.LENGTH_SHORT).show()
-                }
             }
         } catch (e: Exception) {
             Log.e("GeocoderError", "Errore durante la geocodifica: ${e.message}")
@@ -180,10 +176,6 @@ fun MainMapScreen(
                     center = cameraPosition.target, // Centro della mappa
                     zoomLevel = cameraPosition.zoom // Livello di zoom
                 )
-                if (markers.isNullOrEmpty()) {
-                    Log.d("MainMapScreen", "Nessun marker disponibile")
-                    Toast.makeText(context, "Nessun marker disponibile", Toast.LENGTH_SHORT).show()
-                }
             }
         Log.d("MainMapScreen", "Markers generati in base alla posizione della videocamera")
 
@@ -211,7 +203,6 @@ fun MainMapScreen(
                 )
             }
         }) {
-
             Scaffold(topBar = @androidx.compose.runtime.Composable {
                 TopAppBar(
                     title = { Text("Mappa", color = MaterialTheme.colorScheme.onPrimary) },
@@ -287,73 +278,73 @@ fun MainMapScreen(
                         ) {
                             Icon(Icons.Default.Close, contentDescription = "Rimuovi filtro")
                         }
-                        Log.d("MainMapScreen", "Prima di GoogleMap")
-                        GoogleMap(
-                            modifier = Modifier.weight(1f),
-                            cameraPositionState = cameraPositionState,
-                            uiSettings = mapUiSettings,
-                            properties = mapProperties
-                        ) {
-                            Log.d("MainMapScreen", "Inizio caricamento markers")
-                            // Aggiunge marker sulla mappa
-                            markers?.forEach { marker ->
-                                //Log.d("GoogleMapDebug", "Marker posizione: ${marker.position}")
-                                if (marker.position.latitude.isNaN() || marker.position.longitude.isNaN()) {
-                                    Log.e("MainMapScreen", "Marker non valido: ${marker.audioId}")
-                                } else {
-                                    Marker(
-                                        state = MarkerState(position = marker.position),
-                                        snippet = "Dettagli registrazione", onClick = {
-                                            coroutineScope.launch {
-                                                // Ottieni il nome della posizione in una coroutine
-                                                val positionName = viewModel.getLocationName(
-                                                    context = context,
-                                                    latitude = marker.position.latitude,
-                                                    longitude = marker.position.longitude
+                    }
+                    GoogleMap(
+                        modifier = Modifier.weight(1f),
+                        cameraPositionState = cameraPositionState,
+                        uiSettings = mapUiSettings,
+                        properties = mapProperties
+                    ) {
+                        Log.d("MainMapScreen", "Inizio caricamento markers")
+                        // Aggiunge marker sulla mappa
+                        markers?.forEach { marker ->
+                            //Log.d("GoogleMapDebug", "Marker posizione: ${marker.position}")
+                            if (marker.position.latitude.isNaN() || marker.position.longitude.isNaN()) {
+                                Log.e("MainMapScreen", "Marker non valido: ${marker.audioId}")
+                            } else {
+                                Marker(
+                                    state = MarkerState(position = marker.position),
+                                    snippet = "Dettagli registrazione", onClick = {
+                                        coroutineScope.launch {
+                                            // Ottieni il nome della posizione in una coroutine
+                                            val positionName = viewModel.getLocationName(
+                                                context = context,
+                                                latitude = marker.position.latitude,
+                                                longitude = marker.position.longitude
+                                            )
+
+                                            viewModel.getAudioInfo(marker.audioId)
+                                            audioResponse?.let { it1 ->
+                                                Log.d(
+                                                    "MainMapScreen",
+                                                    "informazioni ottenute: ${it1.toString()}"
                                                 )
-
-                                                viewModel.getAudioInfo(marker.audioId)
-                                                audioResponse?.let { it1 ->
-                                                    Log.d(
-                                                        "MainMapScreen",
-                                                        "informazioni ottenute: ${it1.toString()}"
-                                                    )
-                                                    selectedAudio = it1
-                                                    selectedLocationName = positionName
-                                                    bottomSheetState.show()
-                                                } ?: Toast.makeText(
-                                                    context,
-                                                    "Impossibile caricare le informaioni del brano.",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                            }
-                                            Log.d("Marker", "Marker cliccato: ${marker.position}")
-                                            false // Ritorna false per mantenere il comportamento predefinito del marker
-                                        })
-                                }
+                                                selectedAudio = it1
+                                                selectedLocationName = positionName
+                                                bottomSheetState.show()
+                                            } ?: Toast.makeText(
+                                                context,
+                                                "Impossibile caricare le informaioni del brano.",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                        Log.d("Marker", "Marker cliccato: ${marker.position}")
+                                        false // Ritorna false per mantenere il comportamento predefinito del marker
+                                    })
                             }
-                            Log.d("MainMapScreen", "Eventuali markers caricati") //debug
                         }
+                        Log.d("MainMapScreen", "Eventuali markers caricati") //debug
+                    }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                        Text(
-                            text = "Posizione attuale: $locationName",
-                            modifier = Modifier.padding(all = 16.dp)
-                        )
-                        Button(
-                            onClick = { showRecordingDialog = true },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        ) {
-                            Text("Aggiungi una registrazione")
-                        }
+                    Text(
+                        text = "Posizione attuale: $locationName",
+                        modifier = Modifier.padding(all = 16.dp)
+                    )
+                    Button(
+                        onClick = { showRecordingDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text("Aggiungi una registrazione")
                     }
                 }
             }
         }
     }
+
 
     // Popup di registrazione
     if (showRecordingDialog) {
@@ -401,7 +392,6 @@ fun MainMapScreen(
             })
     }
 }
-
 
 
 @SuppressLint("MissingPermission")
