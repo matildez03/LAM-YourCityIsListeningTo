@@ -190,9 +190,9 @@ fun MainMapScreen(
         gesturesEnabled = false, // Disabilita l'apertura tramite gesture
         drawerContent = {
             DrawerContent(
-                navController, onClose = {
-                    scope.launch { drawerState.close() }
-                }, authViewModel = authViewModel
+                navController, onClose = { scope.launch { drawerState.close() } },
+                authViewModel = authViewModel,
+                preferencesHelper = PreferencesHelper(context)
             )
         }) {
         ModalBottomSheetLayout(sheetState = bottomSheetState, sheetContent = {

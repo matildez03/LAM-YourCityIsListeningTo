@@ -9,6 +9,8 @@ import uni.matilde.lam01.data.remote.models.AudioResponse
 import uni.matilde.lam01.data.remote.models.AuthRequest
 import uni.matilde.lam01.data.remote.models.AuthResponse
 import uni.matilde.lam01.data.remote.models.DeleteAccountResponse
+import uni.matilde.lam01.data.remote.models.DetailResponse
+import uni.matilde.lam01.data.remote.models.MyAudiosResponse
 import uni.matilde.lam01.data.remote.models.TokenResponse
 import uni.matilde.lam01.data.remote.models.UploadAudioResponse
 
@@ -44,5 +46,16 @@ interface ApiService {
     @GET("audio/{audioId}")
     suspend fun getAudioById(@Header("Authorization") token: String, @Path("audioId") audioId: Int): Response<AudioResponse>
 
+    @GET("audio/my")
+    suspend fun getMySongs(@Header("Authorization") token: String): Response<List<MyAudiosResponse>>
+
+    @GET("audio/my/{song_id}/hide")
+    suspend fun hideSong(@Header("Authorization") token: String, @Path("song_id") songId: Int): Response<DetailResponse>
+
+    @GET("audio/my/{song_id}/show")
+    suspend fun showSong(@Header("Authorization") token: String, @Path("song_id") songId: Int): Response<MyAudiosResponse>
+
+    @DELETE("audio/{song_id}")
+    suspend fun deleteSong(@Header("Authorization") token: String, @Path("song_id") songId: Int): Response<DetailResponse>
 
 }

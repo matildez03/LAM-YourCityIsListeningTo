@@ -4,10 +4,9 @@ import android.util.Log
 import com.google.gson.Gson
 import retrofit2.Response
 import uni.matilde.lam01.api.ApiService
-import uni.matilde.lam01.api.RetrofitInstance
 import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.data.TokenManager
-import uni.matilde.lam01.data.remote.models.AuthErrorResponse
+import uni.matilde.lam01.data.remote.models.DetailResponse
 import uni.matilde.lam01.data.remote.models.AuthRequest
 import uni.matilde.lam01.data.remote.models.AuthResponse
 import uni.matilde.lam01.data.remote.models.DeleteAccountResponse
@@ -61,7 +60,7 @@ class AuthRepository(
             } else if (response.code() == 400) {
                 // Caso specifico: Username già registrato
                 val errorBody = response.errorBody()?.string()
-                val errorResponse = Gson().fromJson(errorBody, AuthErrorResponse::class.java)
+                val errorResponse = Gson().fromJson(errorBody, DetailResponse::class.java)
                 Result.failure(Exception(errorResponse?.detail ?: "Errore sconosciuto"))
             } else {
                 // Altri errori

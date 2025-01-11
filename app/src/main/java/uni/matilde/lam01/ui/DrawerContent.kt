@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,15 +31,18 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.setValue
 import org.w3c.dom.Text
+import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.ui.auth.AuthViewModel
 
 
 @Composable
-fun DrawerContent(navController: NavController, onClose: () -> Unit, authViewModel: AuthViewModel) {
+fun DrawerContent(navController: NavController, onClose: () -> Unit, authViewModel: AuthViewModel, preferencesHelper: PreferencesHelper) {
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val username = preferencesHelper.getUsername()
 
 
 
@@ -55,36 +59,26 @@ fun DrawerContent(navController: NavController, onClose: () -> Unit, authViewMod
         ) {
             IconButton(onClick = onClose) {
                 Icon(Icons.Default.Close, contentDescription = "Chiudi menu")
-                Log.d("click event","Button di apertura menù cliccato")
+                Log.d("click event", "Button di apertura menù cliccato")
 
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            "Menu",
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            Icon(Icons.Default.Person, contentDescription = "Profilo")
+            Text(
+                "$username",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+
         HorizontalDivider()
-
-        DrawerItem("Map", Icons.Default.Home, onClick = {
-            if (navController.currentDestination?.route != "map") {
-                navController.navigate("map")
-            }
-            onClose()
-        })
-
-        /*
-        DrawerItem("Profile", Icons.Default.Person, onClick = {
-            navController.navigate("profile")
-            onClose()
-        })
-
-         */
-
-
         DrawerItem("Le mie registrazioni", Icons.Default.Favorite, onClick = {
             navController.navigate("audios")
             onClose()
@@ -94,6 +88,14 @@ fun DrawerContent(navController: NavController, onClose: () -> Unit, authViewMod
             navController.navigate("notifications")
             onClose()
         })
+
+        DrawerItem("Map", Icons.Default.Place, onClick = {
+            if (navController.currentDestination?.route != "map") {
+                navController.navigate("map")
+            }
+            onClose()
+        })
+
         Spacer(modifier = Modifier.weight(1f)) // Spinge il bottone di Logout in basso
 
 
@@ -105,7 +107,11 @@ fun DrawerContent(navController: NavController, onClose: () -> Unit, authViewMod
                 contentColor = MaterialTheme.colorScheme.onError  // Colore del testo e delle icone
             )
         ) {
-            Icon(Icons.Default.ExitToApp, contentDescription = "Logout", modifier = Modifier.padding(end = 8.dp))
+            Icon(
+                Icons.Default.ExitToApp,
+                contentDescription = "Logout",
+                modifier = Modifier.padding(end = 8.dp)
+            )
             Text("Logout")
         }
 
@@ -118,14 +124,42 @@ fun DrawerContent(navController: NavController, onClose: () -> Unit, authViewMod
                 contentColor = MaterialTheme.colorScheme.onError
             )
         ) {
-            Icon(Icons.Default.Person, contentDescription = "Elimina Account", modifier = Modifier.padding(end = 8.dp))
+            Icon(
+                Icons.Default.Person,
+                contentDescription = "Elimina Account",
+                modifier = Modifier.padding(end = 8.dp)
+            )
             Text("Elimina Account")
+        }
+
+        // Sezione About
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
+        ) {
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Your City is Listening To",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            Text(
+                text = "Versione 1.0\nSviluppata da Matilde Zoccolillo",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
         }
     }
     // Dialogo di conferma Logout
     if (showLogoutDialog) {
         AlertDialog(
-            onDismissRequest = { showLogoutDialog = false }, // Chiudi il dialogo se l'utente clicca fuori
+            onDismissRequest = {
+                showLogoutDialog = false
+            }, // Chiudi il dialogo se l'utente clicca fuori
             title = { Text("Conferma Logout") },
             text = { Text("Sei sicuro di voler effettuare il logout?") },
             confirmButton = {
@@ -156,7 +190,7 @@ fun DrawerContent(navController: NavController, onClose: () -> Unit, authViewMod
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteDialog = false
-                    Log.d("Delete","click avvenuto sul tasto di eliminazione")
+                    Log.d("Delete", "click avvenuto sul tasto di eliminazione")
                     authViewModel.deleteAccount() // Azione di eliminazione account
                     //se non ci sono eccezioni
                     navController.navigate("login") {

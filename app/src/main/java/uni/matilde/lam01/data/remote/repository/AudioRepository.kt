@@ -2,15 +2,15 @@ package uni.matilde.lam01.data.remote.repository
 
 import android.util.Log
 import okhttp3.MultipartBody
+import retrofit2.Response
 import uni.matilde.lam01.api.ApiService
-import uni.matilde.lam01.api.RetrofitInstance
 import uni.matilde.lam01.data.TokenManager
 import uni.matilde.lam01.data.local.AudioDao
 import uni.matilde.lam01.data.local.AudioEntity
-import retrofit2.Response
-import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.data.remote.models.AllAudiosResponse
 import uni.matilde.lam01.data.remote.models.AudioResponse
+import uni.matilde.lam01.data.remote.models.DetailResponse
+import uni.matilde.lam01.data.remote.models.MyAudiosResponse
 import uni.matilde.lam01.data.remote.models.UploadAudioResponse
 
 
@@ -83,6 +83,42 @@ class AudioRepository(private val apiService: ApiService,
         return handleApiCall {
             executeAuthenticatedRequest { token ->
                 val response = apiService.getAudioById(token, audioInt)
+                handleRetrofitResponse(response)
+            }
+        }
+    }
+
+    suspend fun fetchMyAudios(): Result<List<MyAudiosResponse>>{
+        return handleApiCall {
+            executeAuthenticatedRequest { token ->
+                val response = apiService.getMySongs(token)
+                handleRetrofitResponse(response)
+            }
+        }
+    }
+
+    suspend fun hideSong(audioId: Int): Result<DetailResponse>{
+        return handleApiCall {
+            executeAuthenticatedRequest { token ->
+                val response = apiService.hideSong(token,audioId)
+                handleRetrofitResponse(response)
+            }
+        }
+    }
+
+    suspend fun showSong(audioId: Int): Result<MyAudiosResponse>{
+        return handleApiCall {
+            executeAuthenticatedRequest { token ->
+                val response = apiService.showSong(token,audioId)
+                handleRetrofitResponse(response)
+            }
+        }
+    }
+
+    suspend fun deleteSong(audioId: Int): Result<DetailResponse>{
+        return handleApiCall {
+            executeAuthenticatedRequest { token ->
+                val response = apiService.deleteSong(token,audioId)
                 handleRetrofitResponse(response)
             }
         }
