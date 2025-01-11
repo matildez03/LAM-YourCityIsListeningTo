@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
@@ -26,13 +27,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.getValue
+import uni.matilde.lam01.data.remote.models.MyAudiosResponse
+
 
 @Composable
 fun UserRecordingsScreen(
     viewModel: MyRecordingsViewModel,
     onBack: () -> Unit
 ) {
-    val recordings by viewModel.recordings.observeAsState(initial = emptyList())
+    val recordings by viewModel.recordings.observeAsState(initial=emptyList())
     val context = LocalContext.current
 
     Column(
@@ -59,21 +63,19 @@ fun UserRecordingsScreen(
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        if (recordings.isEmpty()) {
+        if (recordings?.isEmpty()!!) {
             Text(
                 text = "Nessuna registrazione disponibile",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
         } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
-            ) {
+            LazyColumn{
                 items(recordings) { recording ->
                     RecordingItem(
                         recording = recording,
                         onToggleVisibility = {
-                            if (recording.isHidden) {
+                            if (recording.hidden) {
                                 viewModel.showRecording(recording.id)
                             } else {
                                 viewModel.hideRecording(recording.id)
@@ -106,13 +108,13 @@ fun RecordingItem(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = recording.title,
+                text = "recording.title",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
 
             Text(
-                text = "Caricato il: ${recording.uploadDate}",
+                text = "",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
@@ -124,11 +126,11 @@ fun RecordingItem(
                 Button(
                     onClick = onToggleVisibility,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (recording.isHidden) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                        containerColor = if (recording.hidden) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     )
                 ) {
-                    Text(if (recording.isHidden) "Mostra" else "Nascondi")
+                    Text(if (recording.hidden) "Mostra" else "Nascondi")
                 }
 
                 Button(
@@ -145,19 +147,3 @@ fun RecordingItem(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun UserRecordingsScreenPreview() {
-    val fakeRecordings = listOf(
-        MyAudiosResponse(id = 1, title = "Registrazione 1", uploadDate = "2025-01-01", isHidden = false),
-        MyAudiosResponse(id = 2, title = "Registrazione 2", uploadDate = "2025-01-02", isHidden = true)
-    )
-
-    val fakeViewModel = object : MyRecordingsViewModel(AudioRepository()) {
-        init {
-            _recordings.value = fakeRecordings
-        }
-    }
-
-    UserRecordingsScreen(viewModel = fakeViewModel, onBack = {})
-}
