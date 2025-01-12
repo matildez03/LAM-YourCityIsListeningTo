@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,7 +45,7 @@ fun UserRecordingsScreen(
     onBack: () -> Unit
 ) {
     val recordings by viewModel.displayedRecordings.observeAsState(initial=emptyList())
-    val viewMessage by viewModel.viewMessage.observeAsState("")
+    val viewMessage by viewModel.viewMessage.collectAsState()
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -53,8 +54,9 @@ fun UserRecordingsScreen(
 
     // Mostra un Toast ogni volta che il messaggio cambia
     LaunchedEffect(viewMessage) {
-        if (viewMessage.isNotEmpty()) {
+        if (viewMessage?.trim()?.isNullOrEmpty() == false) {
             Toast.makeText(context, viewMessage, Toast.LENGTH_SHORT).show()
+            viewModel.clearMessage() // Resetta il messaggio
         }
     }
 

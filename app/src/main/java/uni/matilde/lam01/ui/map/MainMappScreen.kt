@@ -94,7 +94,7 @@ fun MainMapScreen(
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val mapUiSettings = remember { MapUiSettings(myLocationButtonEnabled = true) }
     val mapProperties = remember { MapProperties(isMyLocationEnabled = true) }
-    var showRecordingDialog by remember { mutableStateOf(false) } // Stato per il popup
+    var showRecordingDialog by remember { mutableStateOf(false) }
     var showUploadResultDialog by remember { mutableStateOf(false) }
     val errorMessage by viewModel.errorMessage.observeAsState()
     val hasLocationPermission by viewModel.hasLocationPermission.collectAsState()

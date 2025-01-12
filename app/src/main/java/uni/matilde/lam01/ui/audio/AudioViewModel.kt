@@ -74,6 +74,7 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
     val isRecording: StateFlow<Boolean> = _isRecording
 
 
+
     fun checkRecordAudioPermission(context: Context) {
         _hasAudiorecordPermission.value = ContextCompat.checkSelfPermission(
             context,
@@ -104,32 +105,12 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
                 val requestFile = file.asRequestBody("audio/mpeg".toMediaTypeOrNull())
                 val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
                 val result = repository.uploadAudio(longitude, latitude, body)
-                // Debug immediato
-                if (file.exists()) {
-                    Log.d("UploadAudio", "File esistente subito dopo l'upload: ${file.absolutePath}")
-                } else {
-                    Log.e("UploadAudio", "File eliminato o non trovato subito dopo l'upload.")
-                }
 
-                // Aggiungi un delay
-                delay(2000) // 2 secondo
-
-                // Debug dopo il delay
-                if (file.exists()) {
-                    Log.d("UploadAudio", "File esistente 2 secondi dopo l'upload: ${file.absolutePath}")
-                } else {
-                    Log.e("UploadAudio", "File eliminato o non trovato 1 secondo dopo l'upload.")
-                }
                 result.onSuccess { audioResponse ->
                     Log.d("AudioViewModel", "Upload completato con successo!")
-                    _uploadStatus.postValue(true) // Aggiorna lo stato come successo
-                    //debug
-                    if (file.exists()) {
-                        Log.d("UploadAudio", "File esistente subito aver modificato l'uploadstaatus a true: ${file.absolutePath}")
-                    } else {
-                        Log.e("UploadAudio", "File eliminato o non trovato subito aver modificato l'uploadstaatus a true.")
-                    }
                     Log.d("AudioViewModel", audioResponse.toString())
+
+
 
                     var serverAudioId: Int? = null
                     //ottiene l'id del brano nel server
@@ -160,19 +141,12 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
                             timestamp = formattedTimestamp
                         )
 
-                        repository.saveAudioLocally(audioEntity)
                         addAudio(audioEntity)
+                        _uploadStatus.postValue(true) // Aggiorna lo stato come successo
+                        repository.saveAudioLocally(audioEntity)
                     } else{
                         Log.e("AudioViewModel","impossibile ottenere l'id dell'ultimo brano, brano non salvato localmente")
                     }
-
-                    //debug
-                    if (file.exists()) {
-                        Log.d("UploadAudio", "File esistente dopo l'upload: ${file.absolutePath}")
-                    } else {
-                        Log.e("UploadAudio", "File eliminato o non trovato dopo l'upload.")
-                    }
-
                 }.onFailure { error ->
                     Log.e("AudioViewModel", "Errore durante l'upload: ${error.message}")
                     _errorMessage.postValue("Errore durante l'upload: ${error.message}")
@@ -185,6 +159,7 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
                 _uploadStatus.postValue(false) // Aggiorna lo stato come fallimento
             } finally {
                 _isUploading.value = false
+                _mp3AudioPath.value = null
             }
         }
     }
@@ -336,7 +311,9 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
         _isRecording.value = false
         clearError()
         clearUploadStatus()
-        deletePreviousMp3()
+        _uploadStatus.value = null
+        _mp3AudioPath.value = null
+
     }
 
     fun addAudio(audioEntity: AudioEntity) {

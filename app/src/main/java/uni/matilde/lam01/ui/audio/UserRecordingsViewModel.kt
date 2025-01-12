@@ -1,5 +1,6 @@
 package uni.matilde.lam01.ui.audio
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -7,8 +8,12 @@ import androidx.lifecycle.ViewModel
 import uni.matilde.lam01.data.remote.models.MyAudiosResponse
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import uni.matilde.lam01.data.remote.repository.AudioRepository
+import uni.matilde.lam01.util.player.AndroidAudioPlayer
+import java.io.File
 
 
 class UserRecordingsViewModel(private val audioRepository: AudioRepository) : ViewModel() {
@@ -18,8 +23,15 @@ class UserRecordingsViewModel(private val audioRepository: AudioRepository) : Vi
     private val _displayedRecordings = MutableLiveData<List<DisplayedAudioInfo>>()
     val displayedRecordings: LiveData<List<DisplayedAudioInfo>> get() = _displayedRecordings
 
-    private val _viewMessage = MutableLiveData<String>()
-    val viewMessage: LiveData<String> get() = _viewMessage
+    //utilizzo stateflow per notificare ogni aggiornamento del valore
+    private val _viewMessage = MutableStateFlow<String?>(null)
+    val viewMessage: StateFlow<String?> = _viewMessage
+
+
+    fun clearMessage() {
+        _viewMessage.value = null
+    }
+
 
     fun getRecordings() {
         viewModelScope.launch {
@@ -72,21 +84,27 @@ class UserRecordingsViewModel(private val audioRepository: AudioRepository) : Vi
                 }
             } catch (e: Exception) {
                 Log.e("UserRecordingsViewModel", "Eccezione durante il fetch: ${e.message}")
-                _viewMessage.postValue("Errore durante il fetch dei brani")
+                _viewMessage.value = "Errore durante il fetch dei brani"
             }
         }
     }
+
 
     fun hideRecording(songId: Int) {
         viewModelScope.launch {
             try {
                 val result = audioRepository.hideSong(songId)
                 if (result.isSuccess) {
-                    _viewMessage.value = result.getOrNull()?.detail
+                    _viewMessage.value = "Audio nascosto con successo!"
+
+                    // Aggiorna la lista di registrazioni
+                    _displayedRecordings.value = _displayedRecordings.value?.map {
+                        if (it.id == songId) it.copy(hidden = true) else it
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("UserRecordingsViewModel", "Impossibile nascondere il brano: ${e.message}")
-                _viewMessage.postValue("Impossibile nascondere il brano")
+                _viewMessage.value = "Impossibile nascondere il brano"
             }
         }
     }
@@ -97,10 +115,15 @@ class UserRecordingsViewModel(private val audioRepository: AudioRepository) : Vi
                 val result = audioRepository.showSong(songId)
                 if (result.isSuccess) {
                     _viewMessage.value = "La registrazione è ora visibile agli utenti!"
+
+                    // Aggiorna la lista di registrazioni
+                    _displayedRecordings.value = _displayedRecordings.value?.map {
+                        if (it.id == songId) it.copy(hidden = false) else it
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("UserRecordingsViewModel", "Impossibile mostrare il brano: ${e.message}")
-                _viewMessage.postValue("C'è stato un errore")
+                _viewMessage.value = "C'è stato un errore"
             }
         }
     }
@@ -110,11 +133,15 @@ class UserRecordingsViewModel(private val audioRepository: AudioRepository) : Vi
             try {
                 val result = audioRepository.deleteSong(songId)
                 if (result.isSuccess) {
-                    _viewMessage.value = "Registrazione eliminata con successo"
+                    _viewMessage.value = "Registrazione eliminata con successo!"
+
+                    _displayedRecordings.value = _displayedRecordings.value?.filter {
+                        it.id != songId
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("UserRecordingsViewModel", "Impossibile eliminare il brano: ${e.message}")
-                _viewMessage.postValue("C'è stato un errore")
+                _viewMessage.value = "C'è stato un errore"
             }
         }
     }

@@ -94,7 +94,6 @@ class AndroidAudioPlayer(
         player?.release()
         player = null
         Log.d("AndroidAudioPlayer", "MediaPlayer rilasciato.")
-
     }
 
 }
