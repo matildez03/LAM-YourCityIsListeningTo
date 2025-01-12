@@ -1,5 +1,6 @@
 package uni.matilde.lam01.ui.audio
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -35,7 +37,19 @@ fun UserRecordingsScreen(
     onBack: () -> Unit
 ) {
     val recordings by viewModel.recordings.observeAsState(initial=emptyList())
+    val viewMessage by viewModel.viewMessage.observeAsState("")
     val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.getRecordings()
+    }
+
+    // Mostra un Toast ogni volta che il messaggio cambia
+    LaunchedEffect(viewMessage) {
+        if (viewMessage.isNotEmpty()) {
+            Toast.makeText(context, viewMessage, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Column(
         modifier = Modifier
