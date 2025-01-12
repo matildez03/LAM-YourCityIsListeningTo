@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,7 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import uni.matilde.lam01.data.remote.models.MyAudiosResponse
@@ -33,7 +31,7 @@ import uni.matilde.lam01.data.remote.models.MyAudiosResponse
 
 @Composable
 fun UserRecordingsScreen(
-    viewModel: MyRecordingsViewModel,
+    viewModel: UserRecordingsViewModel,
     onBack: () -> Unit
 ) {
     val recordings by viewModel.recordings.observeAsState(initial=emptyList())

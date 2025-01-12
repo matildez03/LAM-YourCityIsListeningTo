@@ -9,6 +9,9 @@ import uni.matilde.lam01.App
 import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.ui.audio.AudioViewModel
 import uni.matilde.lam01.ui.audio.AudioViewModelFactory
+import uni.matilde.lam01.ui.audio.UserRecordingsViewModel
+import uni.matilde.lam01.ui.audio.UserRecordingsViewModelFactory
+import uni.matilde.lam01.ui.audio.UserRecordingsScreen
 import uni.matilde.lam01.ui.auth.AuthViewModel
 import uni.matilde.lam01.ui.auth.AuthViewModelFactory
 import uni.matilde.lam01.ui.auth.LoginScreen
@@ -47,6 +50,14 @@ fun AppNavHost(
         factory = audioViewModelFactory
     )
 
+    val userRecordingsViewModelFactory = UserRecordingsViewModelFactory(App.instance.audioRepository)
+    val userRecordingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+        modelClass = UserRecordingsViewModel::class.java,
+        factory = userRecordingsViewModelFactory
+    )
+
+
+
 
     NavHost(
         navController = navController,
@@ -75,7 +86,7 @@ fun AppNavHost(
         }
 
         composable("audios") {
-            //todo("crea composable della schermata della gestione degli audio)
+            UserRecordingsScreen(viewModel=userRecordingsViewModel, onBack = { navController.popBackStack() })
         }
 
         composable("notifications") {

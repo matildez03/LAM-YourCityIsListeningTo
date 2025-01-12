@@ -10,7 +10,7 @@ import kotlinx.coroutines.launch
 import uni.matilde.lam01.data.remote.repository.AudioRepository
 
 
-class MyRecordingsViewModel(private val audioRepository: AudioRepository) : ViewModel() {
+class UserRecordingsViewModel(private val audioRepository: AudioRepository) : ViewModel() {
     private val _recordings = MutableLiveData<List<MyAudiosResponse>>()
     val recordings: LiveData<List<MyAudiosResponse>> get() = _recordings
 
