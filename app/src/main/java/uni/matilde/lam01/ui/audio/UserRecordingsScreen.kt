@@ -1,6 +1,7 @@
 package uni.matilde.lam01.ui.audio
 
 import android.media.MediaPlayer
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -180,6 +181,7 @@ fun RecordingItem(
                                     "Errore nella riproduzione: ${e.message}",
                                     Toast.LENGTH_LONG
                                 ).show()
+                                Log.e("UserRecordingsScreen","Errore nella riproduzione: ${e.message}")
                                 isPlaying = false
                                 mediaPlayer?.release()
                                 mediaPlayer = null

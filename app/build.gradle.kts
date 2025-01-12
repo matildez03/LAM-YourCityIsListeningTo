@@ -127,5 +127,10 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.0.0")
     androidTestImplementation("org.mockito:mockito-android:5.5.0")
 
+    //Flogger (logs)
+    implementation("com.google.flogger:flogger:0.7.4")
+    implementation("com.google.flogger:flogger-system-backend:0.7.4") // Per SLF4J
+    implementation("org.slf4j:slf4j-api:1.7.36")
+
 
 }

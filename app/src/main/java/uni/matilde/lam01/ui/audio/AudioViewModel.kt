@@ -16,6 +16,7 @@ import androidx.lifecycle.viewModelScope
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.ReturnCode
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -103,9 +104,31 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
                 val requestFile = file.asRequestBody("audio/mpeg".toMediaTypeOrNull())
                 val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
                 val result = repository.uploadAudio(longitude, latitude, body)
+                // Debug immediato
+                if (file.exists()) {
+                    Log.d("UploadAudio", "File esistente subito dopo l'upload: ${file.absolutePath}")
+                } else {
+                    Log.e("UploadAudio", "File eliminato o non trovato subito dopo l'upload.")
+                }
+
+                // Aggiungi un delay
+                delay(2000) // 2 secondo
+
+                // Debug dopo il delay
+                if (file.exists()) {
+                    Log.d("UploadAudio", "File esistente 2 secondi dopo l'upload: ${file.absolutePath}")
+                } else {
+                    Log.e("UploadAudio", "File eliminato o non trovato 1 secondo dopo l'upload.")
+                }
                 result.onSuccess { audioResponse ->
                     Log.d("AudioViewModel", "Upload completato con successo!")
                     _uploadStatus.postValue(true) // Aggiorna lo stato come successo
+                    //debug
+                    if (file.exists()) {
+                        Log.d("UploadAudio", "File esistente subito aver modificato l'uploadstaatus a true: ${file.absolutePath}")
+                    } else {
+                        Log.e("UploadAudio", "File eliminato o non trovato subito aver modificato l'uploadstaatus a true.")
+                    }
                     Log.d("AudioViewModel", audioResponse.toString())
 
                     var serverAudioId: Int? = null
@@ -140,7 +163,14 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
                         repository.saveAudioLocally(audioEntity)
                         addAudio(audioEntity)
                     } else{
-                        Log.e("AudioViewModel","impossibile ottenere l'id dell'ultimo brano")
+                        Log.e("AudioViewModel","impossibile ottenere l'id dell'ultimo brano, brano non salvato localmente")
+                    }
+
+                    //debug
+                    if (file.exists()) {
+                        Log.d("UploadAudio", "File esistente dopo l'upload: ${file.absolutePath}")
+                    } else {
+                        Log.e("UploadAudio", "File eliminato o non trovato dopo l'upload.")
                     }
 
                 }.onFailure { error ->

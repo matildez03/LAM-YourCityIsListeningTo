@@ -137,8 +137,8 @@ fun AudioRecordingDialog(
             }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             if (success) {
-                onDismiss() // Chiudi il dialogo di registrazione
                 onUploadSuccess() // Mostra il dialogo di successo del caricamento
+                onDismiss() // Chiudi il dialogo di registrazione
             } else {
                 Toast.makeText(
                     context,
