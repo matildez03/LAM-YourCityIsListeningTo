@@ -26,8 +26,9 @@ import uni.matilde.lam01.data.remote.models.UploadAudioResponse
 import uni.matilde.lam01.util.player.AndroidAudioPlayer
 import uni.matilde.lam01.util.recorder.AndroidAudioRecorder
 import java.io.File
+import java.util.Date
 import java.util.Locale
-import kotlin.math.truncate
+import java.text.SimpleDateFormat
 
 
 class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
@@ -107,24 +108,40 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
                     _uploadStatus.postValue(true) // Aggiorna lo stato come successo
                     Log.d("AudioViewModel", audioResponse.toString())
 
+                    var serverAudioId: Int? = null
+                    //ottiene l'id del brano nel server
+                    val myAudiosResponse = repository.fetchMyAudios()
+                    if (myAudiosResponse.isSuccess){
+                        serverAudioId = myAudiosResponse.getOrNull()?.last()?.id
+                        Log.d("AudioViewModel", "Id dell'audio nel server: $serverAudioId")
+                    }
 
-                    // Salva in locale
-                    val audioEntity = AudioEntity(
-                        username = username,
-                        locationName = locationName,
-                        filePath = filePath,
-                        bpm = audioResponse.bpm,
-                        danceability = audioResponse.danceability,
-                        loudness = audioResponse.loudness,
-                        mood = audioResponse.mood.maxByOrNull { it.value }?.key,
-                        genre = audioResponse.genre.maxByOrNull { it.value }?.key,
-                        instrument = audioResponse.instrument.maxByOrNull { it.value }?.key,
-                        latitude = latitude,
-                        longitude = longitude
-                    )
+                    if(serverAudioId!= null) {
+                        val currentDateTime = Date()
+                        val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                        val formattedTimestamp = formatter.format(currentDateTime).toString()
+                        // Salva in locale
+                        val audioEntity = AudioEntity(
+                            id = serverAudioId!!,
+                            username = username,
+                            locationName = locationName,
+                            filePath = filePath,
+                            bpm = audioResponse.bpm,
+                            danceability = audioResponse.danceability,
+                            loudness = audioResponse.loudness,
+                            mood = audioResponse.mood.maxByOrNull { it.value }?.key,
+                            genre = audioResponse.genre.maxByOrNull { it.value }?.key,
+                            instrument = audioResponse.instrument.maxByOrNull { it.value }?.key,
+                            latitude = latitude,
+                            longitude = longitude,
+                            timestamp = formattedTimestamp
+                        )
 
-                    repository.saveAudioLocally(audioEntity)
-                    addAudio(audioEntity)
+                        repository.saveAudioLocally(audioEntity)
+                        addAudio(audioEntity)
+                    } else{
+                        Log.e("AudioViewModel","impossibile ottenere l'id dell'ultimo brano")
+                    }
 
                 }.onFailure { error ->
                     Log.e("AudioViewModel", "Errore durante l'upload: ${error.message}")

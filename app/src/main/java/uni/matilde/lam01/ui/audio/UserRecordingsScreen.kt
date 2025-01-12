@@ -1,5 +1,6 @@
 package uni.matilde.lam01.ui.audio
 
+import android.media.MediaPlayer
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -28,7 +30,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import uni.matilde.lam01.data.remote.models.MyAudiosResponse
+import kotlin.math.round
 
 
 @Composable
@@ -36,7 +42,7 @@ fun UserRecordingsScreen(
     viewModel: UserRecordingsViewModel,
     onBack: () -> Unit
 ) {
-    val recordings by viewModel.recordings.observeAsState(initial=emptyList())
+    val recordings by viewModel.displayedRecordings.observeAsState(initial=emptyList())
     val viewMessage by viewModel.viewMessage.observeAsState("")
     val context = LocalContext.current
 
@@ -105,10 +111,15 @@ fun UserRecordingsScreen(
 
 @Composable
 fun RecordingItem(
-    recording: MyAudiosResponse,
+    recording: DisplayedAudioInfo,
     onToggleVisibility: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val context = LocalContext.current
+    var isPlaying by remember { mutableStateOf(false) }
+    var mediaPlayer: MediaPlayer? = remember { null }
+
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -119,14 +130,20 @@ fun RecordingItem(
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
+            var position = ""
+            if(recording.locationName.trim().isNullOrEmpty()){
+                position = recording.latLng.toString()
+            } else{
+                position = recording.locationName
+            }
             Text(
-                text = "recording.title",
+                text = position,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
 
             Text(
-                text = "",
+                text = recording.timestamp,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
@@ -135,6 +152,49 @@ fun RecordingItem(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                IconButton(
+                    onClick = {
+                        if (isPlaying) {
+                            // Stop playback
+                            mediaPlayer?.stop()
+                            mediaPlayer?.release()
+                            mediaPlayer = null
+                            isPlaying = false
+                        } else {
+                            // Start playback
+                            try {
+                                mediaPlayer = MediaPlayer().apply {
+                                    setDataSource(recording.filePath)
+                                    prepare()
+                                    start()
+                                }
+                                isPlaying = true
+                                mediaPlayer?.setOnCompletionListener {
+                                    isPlaying = false
+                                    mediaPlayer?.release()
+                                    mediaPlayer = null
+                                }
+                            } catch (e: Exception) {
+                                Toast.makeText(
+                                    context,
+                                    "Errore nella riproduzione: ${e.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                isPlaying = false
+                                mediaPlayer?.release()
+                                mediaPlayer = null
+                            }
+                        }
+                    },
+                    enabled = !recording.filePath.isNullOrEmpty()!! // Disabilita se filePath è invalido
+
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Close else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) "Pausa" else "Riproduci"
+                    )
+                }
+
                 Button(
                     onClick = onToggleVisibility,
                     colors = ButtonDefaults.buttonColors(
