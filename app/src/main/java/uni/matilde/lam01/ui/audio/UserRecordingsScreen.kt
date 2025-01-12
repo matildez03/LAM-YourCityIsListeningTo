@@ -166,6 +166,11 @@ fun RecordingItem(
                         } else {
                             // Start playback
                             try {
+                                if(mediaPlayer?.isPlaying == true){
+                                    isPlaying = false
+                                    mediaPlayer?.release()
+                                    mediaPlayer = null
+                                }
                                 mediaPlayer = MediaPlayer().apply {
                                     setDataSource(recording.filePath)
                                     prepare()
