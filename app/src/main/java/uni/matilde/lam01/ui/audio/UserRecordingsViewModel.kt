@@ -1,5 +1,6 @@
 package uni.matilde.lam01.ui.audio
 
+import android.net.http.HttpException
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -10,6 +11,7 @@ import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import retrofit2.http.HTTP
 import uni.matilde.lam01.data.local.AudioEntity
 import uni.matilde.lam01.data.remote.repository.AudioRepository
 
@@ -17,6 +19,8 @@ import uni.matilde.lam01.data.remote.repository.AudioRepository
 class UserRecordingsViewModel(private val audioRepository: AudioRepository) : ViewModel() {
     private val _remoteRecordings = MutableLiveData<List<MyAudiosResponse>>()
     val remoteRecordings: LiveData<List<MyAudiosResponse>> get() = _remoteRecordings
+
+    private val _localRecordings = MutableLiveData<List<AudioEntity>>()
 
     private val _displayedRecordings = MutableLiveData<List<DisplayedAudioInfo>>()
     val displayedRecordings: LiveData<List<DisplayedAudioInfo>> get() = _displayedRecordings
@@ -35,10 +39,22 @@ class UserRecordingsViewModel(private val audioRepository: AudioRepository) : Vi
     }
 
     /*
+
     fun getRecordings(){
         viewModelScope.launch{
             try{
-                val result = audioRepository.getAllMyLocalAudios()
+                val result = audioRepository.getAllMyLocalAudios().getOrNull()
+                if (result != null && !result.isEmpty()) {
+                    Log.d("UserRecordingsViewModel", "Audio locali trovati: ${result.size}")
+                    _localRecordings.value = result!!
+
+                    val localRecordings = audioRepository.getAllMyLocalAudios().getOrNull()
+                    Log.d(
+                        "UserRecordingsViewModel",
+                        "Audio locali trovati: ${localRecordings?.size}"
+                    )
+
+                }
             } catch(){
 
             }
@@ -46,6 +62,8 @@ class UserRecordingsViewModel(private val audioRepository: AudioRepository) : Vi
     }
 
      */
+
+
 
 //TODO: rendi visibili prima quelli locali
     fun getRecordings() {
@@ -111,6 +129,13 @@ class UserRecordingsViewModel(private val audioRepository: AudioRepository) : Vi
             } catch (e: Exception) {
                 Log.e("UserRecordingsViewModel", "Eccezione durante il fetch: ${e.message}")
                 _viewMessage.value = "Errore durante il fetch dei brani"
+
+                /*
+                if(e == HttpException){
+                    TODO:mostra solo i dati locali
+                }
+
+                 */
             }
         }
     }

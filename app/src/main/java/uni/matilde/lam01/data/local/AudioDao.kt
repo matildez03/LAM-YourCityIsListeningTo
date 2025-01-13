@@ -18,4 +18,7 @@ interface AudioDao {
 
     @Query("SELECT * FROM audio WHERE id = :audioId")
     suspend fun getById(audioId: Int): AudioEntity
+
+    @Query("DELETE FROM audio WHERE username = :username")
+    suspend fun deleteByUsername(username: String)
 }
