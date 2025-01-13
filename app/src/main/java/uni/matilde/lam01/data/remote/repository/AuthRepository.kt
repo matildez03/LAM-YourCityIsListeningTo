@@ -14,12 +14,12 @@ import uni.matilde.lam01.data.remote.models.AuthResponse
 import uni.matilde.lam01.data.remote.models.DeleteAccountResponse
 import uni.matilde.lam01.data.remote.models.TokenResponse
 import uni.matilde.lam01.ui.map.TokenExpiredException
+import uni.matilde.lam01.util.Exceptions.AuthenticationException
 
 class AuthRepository(
     private val apiService: ApiService,
     private val preferencesHelper: PreferencesHelper,
-    private val tokenManager: TokenManager,
-    private val tokenService: TokenService
+    private val tokenManager: TokenManager
 ) {
 
     // Singleton pattern
@@ -28,17 +28,15 @@ class AuthRepository(
         private var instance: AuthRepository? = null
 
         fun getInstance(
-            preferencesHelper: PreferencesHelper,
-            tokenManager: TokenManager,
             apiService: ApiService,
-            tokenService: TokenService
+            preferencesHelper: PreferencesHelper,
+            tokenManager: TokenManager
         ): AuthRepository {
             return instance ?: synchronized(this) {
                 instance ?: AuthRepository(
                     apiService = apiService,
                     tokenManager = tokenManager,
-                    preferencesHelper = preferencesHelper,
-                    tokenService = tokenService
+                    preferencesHelper = preferencesHelper
                 ).also { instance = it }
             }
         }
@@ -143,11 +141,24 @@ class AuthRepository(
     }
 
     private suspend fun <T> executeAuthenticatedRequest(request: suspend (String) -> Result<T>): Result<T> {
-        var token = tokenService.getValidToken()
-            ?: return Result.failure(Exception("Token scaduto o non disponibile"))
+        var token = tokenManager.getToken()
+        if (token == null) {
+            val username = preferencesHelper.getUsername()
+            val password = preferencesHelper.getPassword()
+            if (username != null && password != null) {
+                val tokenResponse = getToken(username, password)
+                token = tokenResponse.getOrNull()?.client_secret
+            }
+        }
+
+        if (token.isNullOrBlank()) {
+            throw AuthenticationException("Errore di autenticazione: username o token non trovato.")
+        }
+
         token = "Bearer $token"
         return request(token)
     }
+
 
     /**
      * Estensione per convertire una risposta Retrofit in un oggetto Result

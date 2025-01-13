@@ -4,6 +4,7 @@ import android.app.Application
 import uni.matilde.lam01.api.RetrofitInstance
 import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.data.TokenManager
+import uni.matilde.lam01.data.TokenService
 import uni.matilde.lam01.data.local.AppDatabase
 import uni.matilde.lam01.data.remote.repository.AudioRepository
 import uni.matilde.lam01.data.remote.repository.AuthRepository
@@ -28,6 +29,9 @@ class App : Application() {
     lateinit var tokenManager: TokenManager
         private set
 
+    lateinit var tokenService: TokenService
+        private set
+
     lateinit var appDatabase: AppDatabase
         private set
 
@@ -39,24 +43,18 @@ class App : Application() {
 
 
         instance = this
-        // Inizializza PreferencesHelper
+
         preferencesHelper = PreferencesHelper(this)
-        // Inizializza TokenManager
-        tokenManager = TokenManager(preferencesHelper)
-
-        // Inizializza il Database
         appDatabase = AppDatabase.getDatabase(this)
-
-        // Inizializza AuthRepository
-        authRepository = AuthRepository.getInstance(preferencesHelper, tokenManager, RetrofitInstance.api)
-
+        tokenManager = TokenManager(preferencesHelper)
+        authRepository = AuthRepository.getInstance(RetrofitInstance.api, preferencesHelper, tokenManager)
+        tokenService = TokenService(tokenManager, preferencesHelper, authRepository)
         audioRepository = AudioRepository.getInstance(
             apiService = RetrofitInstance.api,
-            tokenManager = tokenManager,
+            tokenService = tokenService,
             preferencesHelper = preferencesHelper,
             audioDao = appDatabase.audioDao()
         )
-
         mapRepository = MapRepository.getInstance(audioRepository = audioRepository)
 
     }

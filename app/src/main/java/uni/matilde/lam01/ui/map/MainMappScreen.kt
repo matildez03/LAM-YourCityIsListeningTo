@@ -86,7 +86,8 @@ fun MainMapScreen(
     authViewModel: AuthViewModel,
     audioViewModel: AudioViewModel,
     navController: NavController,
-    preferencesHelper: PreferencesHelper
+    preferencesHelper: PreferencesHelper,
+    onLogout:()->Unit
 ) {
 
 
@@ -184,7 +185,12 @@ fun MainMapScreen(
         gesturesEnabled = false, // Disabilita l'apertura tramite gesture
         drawerContent = {
             DrawerContent(
-                navController, onClose = { scope.launch { drawerState.close() } },
+                navController,
+                onClose = { scope.launch { drawerState.close() } },
+                onLogout = {
+                    onLogout()
+                    navController.navigate("login"){popUpTo("login"){inclusive=true} }
+                },
                 authViewModel = authViewModel,
                 preferencesHelper = PreferencesHelper(context)
             )

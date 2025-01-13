@@ -39,12 +39,10 @@ import uni.matilde.lam01.ui.auth.AuthViewModel
 
 
 @Composable
-fun DrawerContent(navController: NavController, onClose: () -> Unit, authViewModel: AuthViewModel, preferencesHelper: PreferencesHelper) {
+fun DrawerContent(navController: NavController, onClose: () -> Unit, onLogout: ()->Unit, authViewModel: AuthViewModel, preferencesHelper: PreferencesHelper) {
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     val username = preferencesHelper.getUsername()
-
-
 
     Column(
         modifier = Modifier
@@ -165,7 +163,8 @@ fun DrawerContent(navController: NavController, onClose: () -> Unit, authViewMod
             confirmButton = {
                 TextButton(onClick = {
                     showLogoutDialog = false
-                    onClose() // Chiudi il drawer
+                    onClose()
+                    onLogout()
                     navController.navigate("login") {
                         popUpTo("login") { inclusive = true } // Ripulisce lo stack di navigazione
                     }

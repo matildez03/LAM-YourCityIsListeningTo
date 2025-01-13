@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
                 },
                 onLogout = {
                     // Rimuove il token e aggiorna lo stato
-                    preferencesHelper.clearToken()
+                    preferencesHelper.clearPreferences()
                     isAuthenticated.value = false
                 },
                 navigateTo = navigateTo // Passa l'istruzione di navigazione

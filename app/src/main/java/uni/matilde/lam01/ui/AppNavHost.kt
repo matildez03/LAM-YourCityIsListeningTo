@@ -19,6 +19,7 @@ import uni.matilde.lam01.ui.auth.LoginScreen
 import uni.matilde.lam01.ui.auth.SignUpScreen
 import uni.matilde.lam01.ui.map.MainMapScreen
 import uni.matilde.lam01.ui.map.MapViewModel
+import uni.matilde.lam01.util.Exceptions.GlobalExceptionHandler
 
 @Composable
 fun AppNavHost(
@@ -29,6 +30,14 @@ fun AppNavHost(
     navigateTo: String?
 ) {
     val navController = rememberNavController()
+
+    // Configura l'handler globale
+    LaunchedEffect(navController) {
+        Thread.setDefaultUncaughtExceptionHandler(
+            GlobalExceptionHandler(navController, onLogout)
+        )
+    }
+
 
     // Naviga alla destinazione specificata se presente
     LaunchedEffect(navigateTo) {
@@ -91,7 +100,7 @@ fun AppNavHost(
             )
         }
         composable("map") { //la schermata principale è direttamente la mappa
-            MainMapScreen(viewModel = mapViewModel, navController = navController, authViewModel = authViewModel, audioViewModel = audioViewModel, preferencesHelper = preferencesHelper)
+            MainMapScreen(viewModel = mapViewModel, navController = navController, authViewModel = authViewModel, audioViewModel = audioViewModel, preferencesHelper = preferencesHelper, onLogout = onLogout)
         }
 
         composable("audios") {
