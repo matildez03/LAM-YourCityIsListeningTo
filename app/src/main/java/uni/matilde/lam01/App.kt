@@ -53,6 +53,7 @@ class App : Application() {
         audioRepository = AudioRepository.getInstance(
             apiService = RetrofitInstance.api,
             tokenManager = tokenManager,
+            preferencesHelper = preferencesHelper,
             audioDao = appDatabase.audioDao()
         )
 

@@ -2,10 +2,12 @@ package uni.matilde.lam01.data.remote.repository
 
 import android.util.Log
 import com.google.gson.Gson
+import retrofit2.HttpException
 import retrofit2.Response
 import uni.matilde.lam01.api.ApiService
 import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.data.TokenManager
+import uni.matilde.lam01.data.TokenService
 import uni.matilde.lam01.data.remote.models.DetailResponse
 import uni.matilde.lam01.data.remote.models.AuthRequest
 import uni.matilde.lam01.data.remote.models.AuthResponse
@@ -16,7 +18,8 @@ import uni.matilde.lam01.ui.map.TokenExpiredException
 class AuthRepository(
     private val apiService: ApiService,
     private val preferencesHelper: PreferencesHelper,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val tokenService: TokenService
 ) {
 
     // Singleton pattern
@@ -27,24 +30,20 @@ class AuthRepository(
         fun getInstance(
             preferencesHelper: PreferencesHelper,
             tokenManager: TokenManager,
-            apiService: ApiService
+            apiService: ApiService,
+            tokenService: TokenService
         ): AuthRepository {
             return instance ?: synchronized(this) {
                 instance ?: AuthRepository(
                     apiService = apiService,
                     tokenManager = tokenManager,
-                    preferencesHelper = preferencesHelper
+                    preferencesHelper = preferencesHelper,
+                    tokenService = tokenService
                 ).also { instance = it }
             }
         }
     }
 
-    suspend fun <T> executeAuthenticatedRequest(
-        request: suspend (String) -> T
-    ): T {
-        val token = tokenManager.getToken() ?: throw TokenExpiredException()
-        return request(token)
-    }
 
     suspend fun signUp(username: String, password: String): Result<AuthResponse> {
         return handleApiCall {
@@ -102,24 +101,22 @@ class AuthRepository(
         }
     }
 
+
     suspend fun deleteAccount(): Result<DeleteAccountResponse> {
         //TODO: aggiungi rimozione di dati e brani caricati dall'utente
         return handleApiCall {
             executeAuthenticatedRequest { token ->
                 Log.d("Delete", "Token utilizzato: $token")
-                val btoken = "Bearer $token"
-                val response = apiService.deleteAccount(btoken)
-                Log.d("Delete", "Richiesta inviata con token $btoken")
+                val response = apiService.deleteAccount(token)
+
                 if (response.isSuccessful) {
-                    preferencesHelper.clearPreferences() // Pulisce le preferenze
+                    preferencesHelper.clearPreferences()
                     tokenManager.clearToken()
                     response.body()?.let {
                         Log.d("Delete", "Account eliminato con successo: ${it.toString()}")
                         Result.success(it)
-                    } ?: run {
-                        Log.e("Delete", "Risposta vuota durante l'eliminazione dell'account")
-                        Result.failure(Exception("Risposta vuota"))
-                    }
+                    } ?: Result.failure(Exception("Risposta vuota"))
+
                 } else {
                     val errorBody = response.errorBody()?.string()
                     val errorMessage = "Errore durante l'eliminazione dell'account: ${response.code()} - ${errorBody ?: "Messaggio sconosciuto"}"
@@ -137,9 +134,19 @@ class AuthRepository(
     private suspend fun <T> handleApiCall(apiCall: suspend () -> Result<T>): Result<T> {
         return try {
             apiCall()
-        } catch (e: Exception) {
+        } catch (e: HttpException) {
+            Log.e("AuthRepository", "Errore HTTP: ${e.message()}")
+            Result.failure(Exception("Errore HTTP: ${e.code()}"))
+        }catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    private suspend fun <T> executeAuthenticatedRequest(request: suspend (String) -> Result<T>): Result<T> {
+        var token = tokenService.getValidToken()
+            ?: return Result.failure(Exception("Token scaduto o non disponibile"))
+        token = "Bearer $token"
+        return request(token)
     }
 
     /**

@@ -1,21 +1,23 @@
 package uni.matilde.lam01.data.remote.repository
 
 import android.util.Log
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import retrofit2.HttpException
 import retrofit2.Response
 import uni.matilde.lam01.api.ApiService
 import uni.matilde.lam01.data.TokenManager
+import uni.matilde.lam01.data.TokenService
 import uni.matilde.lam01.data.local.AudioDao
 import uni.matilde.lam01.data.local.AudioEntity
+import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.data.remote.models.AllAudiosResponse
 import uni.matilde.lam01.data.remote.models.AudioResponse
 import uni.matilde.lam01.data.remote.models.DetailResponse
 import uni.matilde.lam01.data.remote.models.MyAudiosResponse
 import uni.matilde.lam01.data.remote.models.UploadAudioResponse
+import uni.matilde.lam01.ui.map.TokenExpiredException
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -29,7 +31,8 @@ Naming convention:
  */
 class AudioRepository(
     private val apiService: ApiService,
-    private val tokenManager: TokenManager,
+    private val tokenService: TokenService,
+    private val preferencesHelper: PreferencesHelper,
     private val audioDao: AudioDao
 ) {
 
@@ -40,11 +43,17 @@ class AudioRepository(
 
         fun getInstance(
             apiService: ApiService,
-            tokenManager: TokenManager,
+            tokenService: TokenService,
+            preferencesHelper: PreferencesHelper,
             audioDao: AudioDao
         ): AudioRepository {
             return instance ?: synchronized(this) {
-                instance ?: AudioRepository(apiService, tokenManager, audioDao).also {
+                instance ?: AudioRepository(
+                    apiService,
+                    tokenService,
+                    preferencesHelper,
+                    audioDao
+                ).also {
                     instance = it
                 }
             }
@@ -186,7 +195,10 @@ class AudioRepository(
     private suspend fun <T> handleApiCall(apiCall: suspend () -> Result<T>): Result<T> {
         return try {
             apiCall()
-        } catch (e: Exception) {
+        } catch (e: HttpException) {
+            Log.e("AuthRepository", "Errore HTTP: ${e.message()}")
+            Result.failure(Exception("Errore HTTP: ${e.code()}"))
+        }catch (e: Exception) {
             Log.e("AudioRepository", "Errore durante la chiamata API: ${e.message}")
             Result.failure(e)
         }
@@ -196,7 +208,7 @@ class AudioRepository(
      * Esegue una richiesta autenticata recuperando il token dal TokenManager.
      */
     private suspend fun <T> executeAuthenticatedRequest(request: suspend (String) -> Result<T>): Result<T> {
-        var token = tokenManager.getToken()
+        var token = tokenService.getValidToken()
             ?: return Result.failure(Exception("Token scaduto o non disponibile"))
         token = "Bearer $token"
         return request(token)
@@ -227,9 +239,14 @@ class AudioRepository(
         }
     }
 
-    suspend fun getAllLocalAudios(): Result<List<AudioEntity>> {
+    suspend fun getAllMyLocalAudios(): Result<List<AudioEntity>> {
         return try {
-            Result.success(audioDao.getAll())
+            val username = preferencesHelper.getUsername()
+            if (username != null) {
+                Result.success(audioDao.getAllByUsername(username))
+            } else {
+                Result.failure(Exception("Username non trovato. Probabilmente il token è scaduto."))
+            }
         } catch (e: Exception) {
             Log.e("AudioRepository", "Errore nel recupero dei dati locali: ${e.message}")
             Result.failure(e)

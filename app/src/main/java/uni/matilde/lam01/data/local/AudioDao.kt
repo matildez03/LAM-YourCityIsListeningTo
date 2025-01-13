@@ -13,6 +13,9 @@ interface AudioDao {
     @Query("SELECT * FROM audio")
     suspend fun getAll(): List<AudioEntity>
 
+    @Query("SELECT * FROM audio WHERE username= :username")
+    suspend fun getAllByUsername(username: String): List<AudioEntity>
+
     @Query("SELECT * FROM audio WHERE id = :audioId")
     suspend fun getById(audioId: Int): AudioEntity
 }

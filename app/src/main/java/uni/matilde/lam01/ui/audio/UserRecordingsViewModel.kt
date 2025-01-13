@@ -1,6 +1,5 @@
 package uni.matilde.lam01.ui.audio
 
-import android.content.Context
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -13,8 +12,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import uni.matilde.lam01.data.local.AudioEntity
 import uni.matilde.lam01.data.remote.repository.AudioRepository
-import uni.matilde.lam01.util.player.AndroidAudioPlayer
-import java.io.File
 
 
 class UserRecordingsViewModel(private val audioRepository: AudioRepository) : ViewModel() {
@@ -37,7 +34,20 @@ class UserRecordingsViewModel(private val audioRepository: AudioRepository) : Vi
         _viewMessage.value = null
     }
 
+    /*
+    fun getRecordings(){
+        viewModelScope.launch{
+            try{
+                val result = audioRepository.getAllMyLocalAudios()
+            } catch(){
 
+            }
+        }
+    }
+
+     */
+
+//TODO: rendi visibili prima quelli locali
     fun getRecordings() {
         viewModelScope.launch {
             try {
@@ -46,7 +56,7 @@ class UserRecordingsViewModel(private val audioRepository: AudioRepository) : Vi
                     Log.d("UserRecordingsViewModel", "Audio remoti trovati: ${result.size}")
                     _remoteRecordings.value = result!!
 
-                    val localRecordings = audioRepository.getAllLocalAudios().getOrNull()
+                    val localRecordings = audioRepository.getAllMyLocalAudios().getOrNull()
                     Log.d(
                         "UserRecordingsViewModel",
                         "Audio locali trovati: ${localRecordings?.size}"

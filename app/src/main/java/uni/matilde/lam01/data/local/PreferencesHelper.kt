@@ -12,6 +12,7 @@ class PreferencesHelper(context: Context) {
         private const val KEY_AUTH_TOKEN = "auth_token" // Chiave per il token
         private const val KEY_TOKEN_EXPIRATION = "token_expiration"
         private const val KEY_USERNAME = "username" // Chiave per il nome utente
+        private const val KEY_PASSWORD = "password" // Chiave per la passwoord
         private const val KEY_CLIENT_ID = "client_id" // Chiave per il client_id
     }
 
@@ -72,6 +73,14 @@ class PreferencesHelper(context: Context) {
 
     fun clearToken() {
         sharedPreferences.edit().remove("auth_token").apply()
+    }
+
+    fun savePassword(password: String){
+        sharedPreferences.edit().putString(KEY_PASSWORD, password).apply()
+    }
+
+    fun getPassword(): String? {
+        return sharedPreferences.getString(KEY_PASSWORD, null)
     }
 
     // Implementazione delle sharedPreferences sottoforma di livedata
