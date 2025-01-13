@@ -2,9 +2,6 @@ package uni.matilde.lam01.data.remote.repository
 
 import android.util.Log
 import com.google.android.gms.maps.model.LatLng
-import uni.matilde.lam01.api.ApiService
-import uni.matilde.lam01.data.TokenManager
-import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.data.remote.models.AudioResponse
 import uni.matilde.lam01.ui.map.MapMarker
 
@@ -32,7 +29,7 @@ class MapRepository(private val audioRepository: AudioRepository) {
     // Ottieni tutti gli audio come marker per la mappa
     suspend fun getMarkers(): Result<List<MapMarker>> {
         return try {
-            val result = audioRepository.getAllRemoteAudios()
+            val result = audioRepository.fetchAllRemoteAudios()
             if (result.isSuccess) {
                 Log.d("MapRepository","Registrazioni totali: ${result.getOrNull()?.size}")
                 val markers = result.getOrNull()?.map { audio ->

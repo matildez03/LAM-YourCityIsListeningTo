@@ -26,6 +26,7 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import uni.matilde.lam01.data.remote.models.UploadAudioResponse
 import uni.matilde.lam01.util.player.AndroidAudioPlayer
 import uni.matilde.lam01.util.recorder.AndroidAudioRecorder
+import uni.matilde.lam01.work.WorkScheduler
 import java.io.File
 import java.util.Date
 import java.util.Locale
@@ -36,9 +37,6 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
 
     private val _audios = MutableLiveData<List<AudioEntity>>()
     val audios: LiveData<List<AudioEntity>> get() = _audios
-
-    private val _isUploading = MutableLiveData<Boolean>()
-    val isUploading: LiveData<Boolean> get() = _isUploading
 
     private val _uploadStatus = MutableLiveData<Boolean?>()
     val uploadStatus: LiveData<Boolean?> get() = _uploadStatus
@@ -98,7 +96,6 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
 
 
     fun uploadAudio(username: String, filePath: String, latitude: Double, longitude: Double, locationName: String){
-        _isUploading.value = true
         viewModelScope.launch {
             try {
                 val file = File(filePath)
@@ -158,11 +155,25 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
                 _errorMessage.postValue("Errore durante l'upload: ${e.message}")
                 _uploadStatus.postValue(false) // Aggiorna lo stato come fallimento
             } finally {
-                _isUploading.value = false
                 _mp3AudioPath.value = null
             }
         }
     }
+
+    fun scheduleAudioUpload(
+        context: Context,
+        filePath: String,
+        latitude: Double,
+        longitude: Double
+    ) {
+        WorkScheduler.scheduleAudioUpload(
+            context = context,
+            filePath = filePath,
+            latitude = latitude,
+            longitude = longitude
+        )
+    }
+
 
 
 

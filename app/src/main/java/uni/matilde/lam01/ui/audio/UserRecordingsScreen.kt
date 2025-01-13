@@ -4,6 +4,7 @@ import android.media.MediaPlayer
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import uni.matilde.lam01.data.local.AudioEntity
 import uni.matilde.lam01.data.remote.models.MyAudiosResponse
 import kotlin.math.round
 
@@ -44,8 +46,10 @@ fun UserRecordingsScreen(
     viewModel: UserRecordingsViewModel,
     onBack: () -> Unit
 ) {
-    val recordings by viewModel.displayedRecordings.observeAsState(initial=emptyList())
+    val recordings by viewModel.displayedRecordings.observeAsState(initial = emptyList())
     val viewMessage by viewModel.viewMessage.collectAsState()
+    val audioInfo by viewModel.audioInfo.observeAsState()
+    var showAudioInfo by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -59,6 +63,7 @@ fun UserRecordingsScreen(
             viewModel.clearMessage() // Resetta il messaggio
         }
     }
+
 
     Column(
         modifier = Modifier
@@ -91,10 +96,14 @@ fun UserRecordingsScreen(
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
         } else {
-            LazyColumn{
+            LazyColumn {
                 items(recordings) { recording ->
                     RecordingItem(
                         recording = recording,
+                        onClick = {
+                            viewModel.showRecordingInfo(recording.id)
+                            showAudioInfo = true
+                        },
                         onToggleVisibility = {
                             if (recording.hidden) {
                                 viewModel.showRecording(recording.id)
@@ -110,11 +119,24 @@ fun UserRecordingsScreen(
             }
         }
     }
+
+
+    if (showAudioInfo && audioInfo != null) {
+        AudioInfoDialog(
+            onDismiss = {
+                showAudioInfo = false
+                viewModel.resetAudioInfo()
+            },
+            audio = audioInfo!!
+        )
+    }
+
 }
 
 @Composable
 fun RecordingItem(
     recording: DisplayedAudioInfo,
+    onClick: () -> Unit,
     onToggleVisibility: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -129,14 +151,15 @@ fun RecordingItem(
             .background(MaterialTheme.colorScheme.secondaryContainer)
             .padding(16.dp)
             .padding(vertical = 8.dp)
+            .clickable { onClick() } // Aggiunto il modificatore clickable
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
             var position = ""
-            if(recording.locationName.trim().isNullOrEmpty()){
+            if (recording.locationName.trim().isNullOrEmpty()) {
                 position = recording.latLng.toString()
-            } else{
+            } else {
                 position = recording.locationName
             }
             Text(
@@ -166,7 +189,7 @@ fun RecordingItem(
                         } else {
                             // Start playback
                             try {
-                                if(mediaPlayer?.isPlaying == true){
+                                if (mediaPlayer?.isPlaying == true) {
                                     isPlaying = false
                                     mediaPlayer?.release()
                                     mediaPlayer = null
@@ -188,7 +211,10 @@ fun RecordingItem(
                                     "Errore nella riproduzione: ${e.message}",
                                     Toast.LENGTH_LONG
                                 ).show()
-                                Log.e("UserRecordingsScreen","Errore nella riproduzione: ${e.message}")
+                                Log.e(
+                                    "UserRecordingsScreen",
+                                    "Errore nella riproduzione: ${e.message}"
+                                )
                                 isPlaying = false
                                 mediaPlayer?.release()
                                 mediaPlayer = null
@@ -227,4 +253,6 @@ fun RecordingItem(
         }
     }
 }
+
+
 

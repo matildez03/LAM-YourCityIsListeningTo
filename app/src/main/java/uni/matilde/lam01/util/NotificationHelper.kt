@@ -20,6 +20,11 @@ object NotificationHelper {
             name = "Caricamento Audio",
             description = "Notifiche per il caricamento degli audio",
             importance = NotificationManager.IMPORTANCE_HIGH
+        ),
+        "general_channel" to ChannelData(
+            name = "Generale",
+            description = "Notifiche generali dell'app",
+            importance = NotificationManager.IMPORTANCE_DEFAULT
         )
     )
 
@@ -67,7 +72,13 @@ object NotificationHelper {
     }
 
     // Mostrare una notifica
-    fun showNotification(context: Context, channelId: String, title: String, message: String) {
+    fun showNotification(
+        context: Context,
+        channelId: String,
+        title: String,
+        message: String,
+        notificationId: Int? = null
+    ) {
         val notificationManager = NotificationManagerCompat.from(context)
 
         // Controlla i permessi
@@ -88,6 +99,38 @@ object NotificationHelper {
             .setAutoCancel(true)
             .build()
 
-        notificationManager.notify(System.currentTimeMillis().toInt(), notification)
+        notificationManager.notify(notificationId ?: generateNotificationId(), notification)
+    }
+
+    // Mostrare una notifica per lavori riusciti
+    fun showSuccessNotification(
+        context: Context,
+        title: String = "Caricamento completato",
+        message: String = "Il tuo file è stato caricato con successo."
+    ) {
+        showNotification(
+            context = context,
+            channelId = "audio_upload_channel",
+            title = title,
+            message = message
+        )
+    }
+
+    // Mostrare una notifica per lavori falliti
+    fun showFailureNotification(
+        context: Context,
+        title: String = "Caricamento fallito",
+        message: String = "Si è verificato un problema durante il caricamento del file."
+    ) {
+        showNotification(
+            context = context,
+            channelId = "audio_upload_channel",
+            title = title,
+            message = message
+        )
+    }
+
+    private fun generateNotificationId(): Int {
+        return System.currentTimeMillis().toInt()
     }
 }

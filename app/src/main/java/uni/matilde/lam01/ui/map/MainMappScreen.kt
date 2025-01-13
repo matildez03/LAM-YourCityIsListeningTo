@@ -152,10 +152,6 @@ fun MainMapScreen(
                 viewModel.fetchMarkersForUserLocation(
                     position, 1000.0
                 ) // Filtra i marker entro 1 km
-                Log.d(
-                    "MainMapScreen",
-                    "Markers generati in base alla posizione dell'utente: ${position.toString()}"
-                )
             }
         } catch (e: Exception) {
             Log.e("GeocoderError", "Errore durante la geocodifica: ${e.message}")
@@ -177,8 +173,6 @@ fun MainMapScreen(
                     zoomLevel = cameraPosition.zoom // Livello di zoom
                 )
             }
-        Log.d("MainMapScreen", "Markers generati in base alla posizione della videocamera")
-
     }
 
 
@@ -285,7 +279,6 @@ fun MainMapScreen(
                         uiSettings = mapUiSettings,
                         properties = mapProperties
                     ) {
-                        Log.d("MainMapScreen", "Inizio caricamento markers")
                         // Aggiunge marker sulla mappa
                         markers?.forEach { marker ->
                             //Log.d("GoogleMapDebug", "Marker posizione: ${marker.position}")
@@ -323,7 +316,6 @@ fun MainMapScreen(
                                     })
                             }
                         }
-                        Log.d("MainMapScreen", "Eventuali markers caricati") //debug
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))

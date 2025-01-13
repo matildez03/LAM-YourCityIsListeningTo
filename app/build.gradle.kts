@@ -132,5 +132,9 @@ dependencies {
     implementation("com.google.flogger:flogger-system-backend:0.7.4") // Per SLF4J
     implementation("org.slf4j:slf4j-api:1.7.36")
 
+    //WorkManager
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
+
+
 
 }

@@ -13,7 +13,12 @@ import uni.matilde.lam01.data.remote.models.DetailResponse
 import uni.matilde.lam01.data.remote.models.MyAudiosResponse
 import uni.matilde.lam01.data.remote.models.UploadAudioResponse
 
-
+/*
+Accesso a dati remoti e locali
+Naming convention:
+- get per dati locali
+- fetch per dati remoti
+ */
 class AudioRepository(private val apiService: ApiService,
                       private val tokenManager: TokenManager,
                       private val audioDao: AudioDao) {
@@ -35,6 +40,8 @@ class AudioRepository(private val apiService: ApiService,
     }
 
 
+    // Dati remoti
+
     suspend fun uploadAudio(
         longitude: Double,
         latitude: Double,
@@ -53,24 +60,7 @@ class AudioRepository(private val apiService: ApiService,
         }
     }
 
-    suspend fun saveAudioLocally(audio: AudioEntity) {
-        try {
-            audioDao.insert(audio)
-        } catch (e: Exception) {
-            Log.e("AudioRepository", "Errore nel salvataggio locale: ${e.message}")
-        }
-    }
-
-    suspend fun getAllLocalAudios(): Result<List<AudioEntity>> {
-        return try {
-            Result.success(audioDao.getAll())
-        } catch (e: Exception) {
-            Log.e("AudioRepository", "Errore nel recupero dei dati locali: ${e.message}")
-            Result.failure(e)
-        }
-    }
-
-    suspend fun getAllRemoteAudios(): Result<List<AllAudiosResponse>> {
+    suspend fun fetchAllRemoteAudios(): Result<List<AllAudiosResponse>> {
         return handleApiCall {
             executeAuthenticatedRequest { token ->
                 val response = apiService.getAllSongs(token)
@@ -155,6 +145,35 @@ class AudioRepository(private val apiService: ApiService,
         } else {
             val errorBody = response.errorBody()?.string()
             Result.failure(Exception("Errore API: ${response.code()} - $errorBody"))
+        }
+    }
+
+    /***************************************************************************************/
+    // DATI LOCALI
+
+    suspend fun saveAudioLocally(audio: AudioEntity) {
+        try {
+            audioDao.insert(audio)
+        } catch (e: Exception) {
+            Log.e("AudioRepository", "Errore nel salvataggio locale: ${e.message}")
+        }
+    }
+
+    suspend fun getAllLocalAudios(): Result<List<AudioEntity>> {
+        return try {
+            Result.success(audioDao.getAll())
+        } catch (e: Exception) {
+            Log.e("AudioRepository", "Errore nel recupero dei dati locali: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getLocalAudioById(audioId: Int): Result<AudioEntity> {
+        return try {
+            Result.success(audioDao.getById(audioId))
+        } catch (e: Exception) {
+            Log.e("AudioRepository", "Errore nel recupero dei dati locali: ${e.message}")
+            Result.failure(e)
         }
     }
 }

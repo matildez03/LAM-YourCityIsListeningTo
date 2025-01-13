@@ -159,8 +159,17 @@ fun AudioRecordingDialog(
             confirmButton = {
                 Button(onClick = {
                     // Logica per attendere la connessione Wi-Fi
-                    //TODO: implementa
-                    Toast.makeText(context, "Caricamento posticipato", Toast.LENGTH_SHORT).show()
+                    audioViewModel.scheduleAudioUpload(
+                        context = context,
+                        filePath = mp3AudioPath!!,
+                        latitude = userLocation.latitude,
+                        longitude = userLocation.longitude
+                    )
+                    Toast.makeText(
+                        context,
+                        "Caricamento pianificato con successo",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     showWifiDialog = false
                 }) {
                     Text("Attendi")

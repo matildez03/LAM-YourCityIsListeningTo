@@ -8,6 +8,7 @@ import uni.matilde.lam01.data.local.AppDatabase
 import uni.matilde.lam01.data.remote.repository.AudioRepository
 import uni.matilde.lam01.data.remote.repository.AuthRepository
 import uni.matilde.lam01.data.remote.repository.MapRepository
+import uni.matilde.lam01.util.NotificationHelper
 import uni.matilde.lam01.util.recorder.AndroidAudioRecorder
 
 class App : Application() {
@@ -33,6 +34,9 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
+        NotificationHelper.createNotificationChannels(this)
+
 
         instance = this
         // Inizializza PreferencesHelper
