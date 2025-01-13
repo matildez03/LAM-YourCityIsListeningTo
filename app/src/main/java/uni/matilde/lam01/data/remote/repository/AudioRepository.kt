@@ -1,7 +1,11 @@
 package uni.matilde.lam01.data.remote.repository
 
 import android.util.Log
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import retrofit2.Response
 import uni.matilde.lam01.api.ApiService
 import uni.matilde.lam01.data.TokenManager
@@ -12,6 +16,10 @@ import uni.matilde.lam01.data.remote.models.AudioResponse
 import uni.matilde.lam01.data.remote.models.DetailResponse
 import uni.matilde.lam01.data.remote.models.MyAudiosResponse
 import uni.matilde.lam01.data.remote.models.UploadAudioResponse
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /*
 Accesso a dati remoti e locali
@@ -19,9 +27,11 @@ Naming convention:
 - get per dati locali
 - fetch per dati remoti
  */
-class AudioRepository(private val apiService: ApiService,
-                      private val tokenManager: TokenManager,
-                      private val audioDao: AudioDao) {
+class AudioRepository(
+    private val apiService: ApiService,
+    private val tokenManager: TokenManager,
+    private val audioDao: AudioDao
+) {
 
     // Singleton pattern
     companion object {
@@ -34,7 +44,9 @@ class AudioRepository(private val apiService: ApiService,
             audioDao: AudioDao
         ): AudioRepository {
             return instance ?: synchronized(this) {
-                instance ?: AudioRepository(apiService, tokenManager, audioDao).also { instance = it }
+                instance ?: AudioRepository(apiService, tokenManager, audioDao).also {
+                    instance = it
+                }
             }
         }
     }
@@ -60,6 +72,60 @@ class AudioRepository(private val apiService: ApiService,
         }
     }
 
+    suspend fun uploadAndSaveAudio(
+        username: String,
+        filePath: String,
+        latitude: Double,
+        longitude: Double,
+        locationName: String
+    ): Result<AudioEntity> {
+        return handleApiCall {
+            try {
+                val file = File(filePath)
+                val requestFile = file.asRequestBody("audio/mpeg".toMediaTypeOrNull())
+                val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
+
+                val audioResponse = uploadAudio(longitude, latitude, body).getOrThrow()
+                // Ottiene l'id del brano nel server
+                val serverAudioId = fetchMyAudios()
+                    .getOrNull()
+                    ?.lastOrNull()
+                    ?.id
+                    ?: throw IllegalStateException("Impossibile ottenere l'ID audio dal server.")
+
+                // Ottine il timestamp
+                val currentDateTime = Date()
+                val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                val formattedTimestamp = formatter.format(currentDateTime).toString()
+
+                // Salva in locale
+                val audioEntity = AudioEntity(
+                    id = serverAudioId!!,
+                    username = username,
+                    locationName = locationName,
+                    filePath = filePath,
+                    bpm = audioResponse.bpm,
+                    danceability = audioResponse.danceability,
+                    loudness = audioResponse.loudness,
+                    mood = audioResponse.mood.maxByOrNull { it.value }?.key,
+                    genre = audioResponse.genre.maxByOrNull { it.value }?.key,
+                    instrument = audioResponse.instrument.maxByOrNull { it.value }?.key,
+                    latitude = latitude,
+                    longitude = longitude,
+                    timestamp = formattedTimestamp
+                )
+                saveAudioLocally(audioEntity)
+
+                Log.i("AudioRepository", "Audio caricato con successo")
+                Result.success(audioEntity)
+            } catch (e: Exception) {
+                Log.e("AudioRepository", "Errore durante l'upload con salvataggio: ${e.message}")
+                Result.failure(e)
+            }
+        }
+    }
+
+
     suspend fun fetchAllRemoteAudios(): Result<List<AllAudiosResponse>> {
         return handleApiCall {
             executeAuthenticatedRequest { token ->
@@ -69,7 +135,7 @@ class AudioRepository(private val apiService: ApiService,
         }
     }
 
-    suspend fun fetchAudioById(audioInt: Int): Result<AudioResponse>{
+    suspend fun fetchAudioById(audioInt: Int): Result<AudioResponse> {
         return handleApiCall {
             executeAuthenticatedRequest { token ->
                 val response = apiService.getAudioById(token, audioInt)
@@ -78,7 +144,7 @@ class AudioRepository(private val apiService: ApiService,
         }
     }
 
-    suspend fun fetchMyAudios(): Result<List<MyAudiosResponse>>{
+    suspend fun fetchMyAudios(): Result<List<MyAudiosResponse>> {
         return handleApiCall {
             executeAuthenticatedRequest { token ->
                 val response = apiService.getMySongs(token)
@@ -87,28 +153,28 @@ class AudioRepository(private val apiService: ApiService,
         }
     }
 
-    suspend fun hideSong(audioId: Int): Result<DetailResponse>{
+    suspend fun hideSong(audioId: Int): Result<DetailResponse> {
         return handleApiCall {
             executeAuthenticatedRequest { token ->
-                val response = apiService.hideSong(token,audioId)
+                val response = apiService.hideSong(token, audioId)
                 handleRetrofitResponse(response)
             }
         }
     }
 
-    suspend fun showSong(audioId: Int): Result<MyAudiosResponse>{
+    suspend fun showSong(audioId: Int): Result<MyAudiosResponse> {
         return handleApiCall {
             executeAuthenticatedRequest { token ->
-                val response = apiService.showSong(token,audioId)
+                val response = apiService.showSong(token, audioId)
                 handleRetrofitResponse(response)
             }
         }
     }
 
-    suspend fun deleteSong(audioId: Int): Result<DetailResponse>{
+    suspend fun deleteSong(audioId: Int): Result<DetailResponse> {
         return handleApiCall {
             executeAuthenticatedRequest { token ->
-                val response = apiService.deleteSong(token,audioId)
+                val response = apiService.deleteSong(token, audioId)
                 handleRetrofitResponse(response)
             }
         }
@@ -130,7 +196,8 @@ class AudioRepository(private val apiService: ApiService,
      * Esegue una richiesta autenticata recuperando il token dal TokenManager.
      */
     private suspend fun <T> executeAuthenticatedRequest(request: suspend (String) -> Result<T>): Result<T> {
-        var token = tokenManager.getToken() ?: return Result.failure(Exception("Token scaduto o non disponibile"))
+        var token = tokenManager.getToken()
+            ?: return Result.failure(Exception("Token scaduto o non disponibile"))
         token = "Bearer $token"
         return request(token)
     }
@@ -141,7 +208,8 @@ class AudioRepository(private val apiService: ApiService,
      */
     private inline fun <T> handleRetrofitResponse(response: Response<T>): Result<T> {
         return if (response.isSuccessful) {
-            response.body()?.let { Result.success(it) } ?: Result.failure(Exception("Risposta vuota"))
+            response.body()?.let { Result.success(it) }
+                ?: Result.failure(Exception("Risposta vuota"))
         } else {
             val errorBody = response.errorBody()?.string()
             Result.failure(Exception("Errore API: ${response.code()} - $errorBody"))

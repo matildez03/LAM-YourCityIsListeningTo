@@ -72,7 +72,6 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
     val isRecording: StateFlow<Boolean> = _isRecording
 
 
-
     fun checkRecordAudioPermission(context: Context) {
         _hasAudiorecordPermission.value = ContextCompat.checkSelfPermission(
             context,
@@ -94,61 +93,28 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-
-    fun uploadAudio(username: String, filePath: String, latitude: Double, longitude: Double, locationName: String){
+    fun uploadAudio(
+        username: String,
+        filePath: String,
+        latitude: Double,
+        longitude: Double,
+        locationName: String
+    ) {
         viewModelScope.launch {
             try {
-                val file = File(filePath)
-                val requestFile = file.asRequestBody("audio/mpeg".toMediaTypeOrNull())
-                val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
-                val result = repository.uploadAudio(longitude, latitude, body)
-
-                result.onSuccess { audioResponse ->
-                    Log.d("AudioViewModel", "Upload completato con successo!")
-                    Log.d("AudioViewModel", audioResponse.toString())
-
-
-
-                    var serverAudioId: Int? = null
-                    //ottiene l'id del brano nel server
-                    val myAudiosResponse = repository.fetchMyAudios()
-                    if (myAudiosResponse.isSuccess){
-                        serverAudioId = myAudiosResponse.getOrNull()?.last()?.id
-                        Log.d("AudioViewModel", "Id dell'audio nel server: $serverAudioId")
-                    }
-
-                    if(serverAudioId!= null) {
-                        val currentDateTime = Date()
-                        val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                        val formattedTimestamp = formatter.format(currentDateTime).toString()
-                        // Salva in locale
-                        val audioEntity = AudioEntity(
-                            id = serverAudioId!!,
-                            username = username,
-                            locationName = locationName,
-                            filePath = filePath,
-                            bpm = audioResponse.bpm,
-                            danceability = audioResponse.danceability,
-                            loudness = audioResponse.loudness,
-                            mood = audioResponse.mood.maxByOrNull { it.value }?.key,
-                            genre = audioResponse.genre.maxByOrNull { it.value }?.key,
-                            instrument = audioResponse.instrument.maxByOrNull { it.value }?.key,
-                            latitude = latitude,
-                            longitude = longitude,
-                            timestamp = formattedTimestamp
-                        )
-
-                        addAudio(audioEntity)
-                        _uploadStatus.postValue(true) // Aggiorna lo stato come successo
-                        repository.saveAudioLocally(audioEntity)
-                    } else{
-                        Log.e("AudioViewModel","impossibile ottenere l'id dell'ultimo brano, brano non salvato localmente")
-                    }
-                }.onFailure { error ->
-                    Log.e("AudioViewModel", "Errore durante l'upload: ${error.message}")
-                    _errorMessage.postValue("Errore durante l'upload: ${error.message}")
+                val result = repository.uploadAndSaveAudio(
+                    username,
+                    filePath,
+                    latitude,
+                    longitude,
+                    locationName
+                )
+                result.onSuccess {
+                    addAudio(it)
+                    _uploadStatus.postValue(true) // Aggiorna lo stato come successo
+                }.onFailure {
+                    _errorMessage.postValue("Errore durante l'upload: ${it.message}")
                     _uploadStatus.postValue(false) // Aggiorna lo stato come fallimento
-
                 }
             } catch (e: Exception) {
                 Log.e("AudioViewModel", "Eccezione durante l'upload: ${e.message}")
@@ -161,27 +127,38 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
     }
 
     fun scheduleAudioUpload(
+        username: String,
+        locationName: String,
         context: Context,
         filePath: String,
         latitude: Double,
         longitude: Double
     ) {
-        WorkScheduler.scheduleAudioUpload(
-            context = context,
-            filePath = filePath,
-            latitude = latitude,
-            longitude = longitude
-        )
+        try {
+            WorkScheduler.scheduleAudioUpload(
+                username = username,
+                locationName = locationName,
+                context = context,
+                filePath = filePath,
+                latitude = latitude,
+                longitude = longitude
+            )
+        } catch (e: Exception) {
+            Log.e("AudioViewModel", "Eccezione durante lo scheduling dell'upload: ${e.message}")
+            _errorMessage.postValue("Errore durante lo scheduling dell'upload: ${e.message}")
+            _uploadStatus.postValue(false) // Aggiorna lo stato come fallimento
+        } finally {
+            _mp3AudioPath.value = null
+        }
     }
-
-
 
 
     // Funzioni per registrare audio
     fun startRecording(context: Context, userLocation: LatLng, username: String): Boolean {
         val filesDir = context.filesDir
         if (filesDir?.canWrite() == true) {
-            val mp4FilePath = "${filesDir.absolutePath}/${username}_${userLocation.latitude}_${userLocation.longitude}.mp4"
+            val mp4FilePath =
+                "${filesDir.absolutePath}/${username}_${userLocation.latitude}_${userLocation.longitude}.mp4"
             val mp4File = File(mp4FilePath)
 
             // Verifica se il file esiste già e lo cancella
@@ -217,7 +194,7 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
 
     private fun deletePreviousMp3() {
         //cancella eventuali audio scartati
-        if(_mp3AudioPath.value != null) {
+        if (_mp3AudioPath.value != null) {
             val mp3File = _mp3AudioPath.value?.let { File(it) }
             if (mp3File!!.exists()) {
                 Log.d(
@@ -253,7 +230,10 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
             }
         } catch (e: Exception) {
             _errorMessage.value = "Errore durante l'interruzione della registrazione: ${e.message}"
-            Log.e("AudioViewModel", "Errore durante l'interruzione della registrazione: ${e.message}")
+            Log.e(
+                "AudioViewModel",
+                "Errore durante l'interruzione della registrazione: ${e.message}"
+            )
         }
         return null
     }
@@ -269,8 +249,12 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
                 Log.e("AudioViewModel", "Errore durante la riproduzione: ${e.message}")
             }
         } else {
-            _errorMessage.value = "File audio inesistente o vuoto ${audioFile.absolutePath} - lunghezza ${audioFile.length()}"
-            Log.e("AudioViewModel", "File audio inesistente o vuoto ${audioFile.absolutePath} - lunghezza ${audioFile.length()} - esiste: ${audioFile.exists()}")
+            _errorMessage.value =
+                "File audio inesistente o vuoto ${audioFile.absolutePath} - lunghezza ${audioFile.length()}"
+            Log.e(
+                "AudioViewModel",
+                "File audio inesistente o vuoto ${audioFile.absolutePath} - lunghezza ${audioFile.length()} - esiste: ${audioFile.exists()}"
+            )
         }
     }
 
@@ -288,7 +272,8 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
                 return
             }
         }
-        val ffmpegCommand = "-loglevel verbose -i \"$mp4FilePath\" -c:a libmp3lame -qscale:a 2 \"$mp3FilePath\""
+        val ffmpegCommand =
+            "-loglevel verbose -i \"$mp4FilePath\" -c:a libmp3lame -qscale:a 2 \"$mp3FilePath\""
 
         FFmpegKit.executeAsync(ffmpegCommand) { session ->
             val returnCode = session.returnCode
@@ -317,14 +302,12 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
         _errorMessage.value = null
     }
 
-    fun clearStates(){
+    fun clearStates() {
         recorder?.stop()
         _isRecording.value = false
         clearError()
         clearUploadStatus()
-        _uploadStatus.value = null
         _mp3AudioPath.value = null
-
     }
 
     fun addAudio(audioEntity: AudioEntity) {

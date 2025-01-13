@@ -71,6 +71,7 @@ fun AudioRecordingDialog(
     val errorMessage by audioViewModel.errorMessage.observeAsState()
 
     var showWifiDialog by remember { mutableStateOf(false) }
+    val uploadStatus by audioViewModel.uploadStatus.observeAsState()
 
 
     // Launcher per il permesso di registrazione audio
@@ -126,8 +127,6 @@ fun AudioRecordingDialog(
         }
     }
 
-
-    val uploadStatus by audioViewModel.uploadStatus.observeAsState()
     LaunchedEffect(uploadStatus) {
         uploadStatus?.let { success ->
             val message = if (success) {
@@ -159,7 +158,10 @@ fun AudioRecordingDialog(
             confirmButton = {
                 Button(onClick = {
                     // Logica per attendere la connessione Wi-Fi
+                    audioViewModel.clearUploadStatus()
                     audioViewModel.scheduleAudioUpload(
+                        username = username,
+                        locationName = locationName,
                         context = context,
                         filePath = mp3AudioPath!!,
                         latitude = userLocation.latitude,
@@ -171,6 +173,7 @@ fun AudioRecordingDialog(
                         Toast.LENGTH_SHORT
                     ).show()
                     showWifiDialog = false
+                    onDismiss() //chiude il dialog
                 }) {
                     Text("Attendi")
                 }
@@ -179,6 +182,7 @@ fun AudioRecordingDialog(
                 Button(onClick = {
                     // Procede con la connessione dati
                     if (mp3AudioPath != null) {
+                        audioViewModel.clearUploadStatus()
                         audioViewModel.uploadAudio(
                             username,
                             mp3AudioPath!!,

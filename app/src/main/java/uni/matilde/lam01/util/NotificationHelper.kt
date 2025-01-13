@@ -4,12 +4,15 @@ import android.Manifest
 import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import uni.matilde.lam01.MainActivity
 import uni.matilde.lam01.R
 
 object NotificationHelper {
@@ -72,7 +75,7 @@ object NotificationHelper {
     }
 
     // Mostrare una notifica
-    fun showNotification(
+    fun showUploadNotification(
         context: Context,
         channelId: String,
         title: String,
@@ -91,43 +94,28 @@ object NotificationHelper {
             return // Permesso non concesso, non inviare la notifica
         }
 
+        // Intent per aprire l'app e navigare al composable "audios"
+        val intent = Intent(context, MainActivity::class.java).apply {
+            putExtra("navigate_to", "audios") // Indica che vuoi navigare a "audios"
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
             .build()
 
         notificationManager.notify(notificationId ?: generateNotificationId(), notification)
-    }
-
-    // Mostrare una notifica per lavori riusciti
-    fun showSuccessNotification(
-        context: Context,
-        title: String = "Caricamento completato",
-        message: String = "Il tuo file è stato caricato con successo."
-    ) {
-        showNotification(
-            context = context,
-            channelId = "audio_upload_channel",
-            title = title,
-            message = message
-        )
-    }
-
-    // Mostrare una notifica per lavori falliti
-    fun showFailureNotification(
-        context: Context,
-        title: String = "Caricamento fallito",
-        message: String = "Si è verificato un problema durante il caricamento del file."
-    ) {
-        showNotification(
-            context = context,
-            channelId = "audio_upload_channel",
-            title = title,
-            message = message
-        )
     }
 
     private fun generateNotificationId(): Int {

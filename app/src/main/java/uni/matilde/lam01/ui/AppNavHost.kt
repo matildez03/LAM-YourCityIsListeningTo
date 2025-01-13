@@ -2,6 +2,7 @@ package uni.matilde.lam01.ui
 
 import MapViewModelFactory
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -24,9 +25,17 @@ fun AppNavHost(
     isAuthenticated: Boolean,
     preferencesHelper: PreferencesHelper,
     onLoginSuccess: (String) -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    navigateTo: String?
 ) {
     val navController = rememberNavController()
+
+    // Naviga alla destinazione specificata se presente
+    LaunchedEffect(navigateTo) {
+        navigateTo?.let {
+            navController.navigate(it) {}
+        }
+    }
 
     // Ottiene l'istanza di MapViewModel
     val mapViewModelFactory = MapViewModelFactory(App.instance.mapRepository)

@@ -27,6 +27,9 @@ class MainActivity : ComponentActivity() {
             Log.d("MainActivity", "Token: ${preferencesHelper.getToken()}")
             Log.d("MainActivity", "Username: ${preferencesHelper.getUsername()}")
 
+            // Legge l'intent per verificare se esiste un'istruzione di navigazione
+            val navigateTo = intent?.getStringExtra("navigate_to")
+
 
 
             AppNavHost(
@@ -41,7 +44,8 @@ class MainActivity : ComponentActivity() {
                     // Rimuove il token e aggiorna lo stato
                     preferencesHelper.clearToken()
                     isAuthenticated.value = false
-                }
+                },
+                navigateTo = navigateTo // Passa l'istruzione di navigazione
             )
         }
         Log.d("MainActivity", "onCreate ended")

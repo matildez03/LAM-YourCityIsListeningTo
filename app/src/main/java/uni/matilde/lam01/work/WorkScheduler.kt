@@ -9,6 +9,8 @@ import androidx.work.WorkManager
 
 object WorkScheduler {
     fun scheduleAudioUpload(
+        username: String,
+        locationName: String,
         context: Context,
         filePath: String,
         latitude: Double,
@@ -19,6 +21,8 @@ object WorkScheduler {
             .build()
 
         val inputData = Data.Builder()
+            .putString("username", username)
+            .putString("locationName", locationName)
             .putString("filePath", filePath)
             .putDouble("latitude", latitude)
             .putDouble("longitude", longitude)

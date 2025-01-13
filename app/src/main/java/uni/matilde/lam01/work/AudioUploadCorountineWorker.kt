@@ -1,6 +1,7 @@
 package uni.matilde.lam01.work
 
 import android.content.Context
+import android.util.Log
 import androidx.work.WorkerParameters
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -22,19 +23,16 @@ class AudioUploadCoroutineWorker(
         val filePath = inputData.getString("filePath") ?: return Result.failure()
         val latitude = inputData.getDouble("latitude", 0.0)
         val longitude = inputData.getDouble("longitude", 0.0)
+        val username = inputData.getString("username") ?: "Anonimo"
+        val locationName = inputData.getString("locationName") ?: "Posizione sconosciuta"
 
         return try {
-            val multipartFile = createMultipartFile(filePath)
+            // Recupera direttamente l'AudioEntity o null
+            val audioEntity = repository.uploadAndSaveAudio(username, filePath, latitude, longitude, locationName).getOrNull()
 
-            // Esegui l'upload come funzione `suspend`
-            val result = repository.uploadAudio(
-                longitude = longitude,
-                latitude = latitude,
-                file = multipartFile
-            )
-
-            if (result.isSuccess) {
-                NotificationHelper.showNotification(
+            if (audioEntity != null) {
+                // Mostra una notifica in caso di successo
+                NotificationHelper.showUploadNotification(
                     context = applicationContext,
                     channelId = "audio_upload_channel",
                     title = "Caricamento completato",
@@ -42,12 +40,15 @@ class AudioUploadCoroutineWorker(
                 )
                 Result.success()
             } else {
+                Log.e("AudioUploadWorker", "Errore: risultato nullo durante l'upload.")
                 Result.retry()
             }
         } catch (e: Exception) {
+            Log.e("AudioUploadWorker", "Errore durante l'upload: ${e.message}")
             Result.retry()
         }
     }
+
 
     private fun createMultipartFile(filePath: String): MultipartBody.Part {
         val file = File(filePath)
