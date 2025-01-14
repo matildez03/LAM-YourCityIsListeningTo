@@ -8,5 +8,5 @@ data class DisplayedAudioInfo(
     val locationName: String,
     val latLng: LatLng,
     val filePath: String,
-    val hidden: Boolean
+    val hidden: Boolean?
 )

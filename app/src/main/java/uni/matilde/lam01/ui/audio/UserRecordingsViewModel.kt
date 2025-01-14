@@ -1,6 +1,5 @@
 package uni.matilde.lam01.ui.audio
 
-import android.net.http.HttpException
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -11,7 +10,6 @@ import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import retrofit2.http.HTTP
 import uni.matilde.lam01.data.local.AudioEntity
 import uni.matilde.lam01.data.remote.repository.AudioRepository
 
@@ -38,109 +36,71 @@ class UserRecordingsViewModel(private val audioRepository: AudioRepository) : Vi
         _viewMessage.value = null
     }
 
-    /*
 
-    fun getRecordings(){
-        viewModelScope.launch{
-            try{
+    fun getRecordings() {
+        viewModelScope.launch {
+            try {
                 val result = audioRepository.getAllMyLocalAudios().getOrNull()
                 if (result != null && !result.isEmpty()) {
                     Log.d("UserRecordingsViewModel", "Audio locali trovati: ${result.size}")
                     _localRecordings.value = result!!
 
-                    val localRecordings = audioRepository.getAllMyLocalAudios().getOrNull()
+                    val remoteRecordings = audioRepository.fetchMyAudios().getOrNull()
                     Log.d(
                         "UserRecordingsViewModel",
-                        "Audio locali trovati: ${localRecordings?.size}"
-                    )
-
-                }
-            } catch(){
-
-            }
-        }
-    }
-
-     */
-
-
-
-//TODO: rendi visibili prima quelli locali
-    fun getRecordings() {
-        viewModelScope.launch {
-            try {
-                val result = audioRepository.fetchMyAudios().getOrNull()
-                if (result != null && !result.isEmpty()) {
-                    Log.d("UserRecordingsViewModel", "Audio remoti trovati: ${result.size}")
-                    _remoteRecordings.value = result!!
-
-                    val localRecordings = audioRepository.getAllMyLocalAudios().getOrNull()
-                    Log.d(
-                        "UserRecordingsViewModel",
-                        "Audio locali trovati: ${localRecordings?.size}"
+                        "Audio locali trovati: ${remoteRecordings?.size}"
                     )
 
                     val allRecordingsInfo = mutableListOf<DisplayedAudioInfo>()
                     for (recording in result) {
                         //Debug:
                         Log.d("UserRecordingsViewModel", "ID remoto brano: ${recording.id}")
-                        val localRecording = localRecordings?.find { it.id == recording.id }
-                        if (localRecording != null) {
+                        val remoteRecording = remoteRecordings?.find { it.id == recording.id }
+                        if (remoteRecording != null) {
                             Log.d(
                                 "UserRecordingsViewModel",
-                                "ID locale brano: ${localRecording.id}"
+                                "ID locale brano: ${remoteRecording.id}"
                             )
                             val displayedRecording = DisplayedAudioInfo(
                                 id = recording.id,
-                                timestamp = localRecording?.timestamp.toString(),
-                                locationName = localRecording?.locationName ?: "",
+                                timestamp = recording.timestamp.toString(),
+                                locationName = recording.locationName ?: "",
                                 latLng = LatLng(
-                                    localRecording?.latitude!!,
-                                    localRecording.longitude!!
+                                    recording.latitude!!,
+                                    recording.longitude!!
                                 ),
-                                filePath = localRecording?.filePath ?: "",
-                                hidden = recording.hidden
+                                filePath = recording.filePath ?: "",
+                                hidden = remoteRecording.hidden
                             )
                             allRecordingsInfo.add(displayedRecording)
                         } else {
                             val displayedRecording = DisplayedAudioInfo(
                                 id = recording.id,
-                                timestamp = "timestamp non trovato",
-                                locationName = "Posizione non riconosciuta",
+                                timestamp = recording.timestamp ?: "Timestamp non trovato",
+                                locationName = recording.locationName
+                                    ?: "Posizione non riconosciuta",
                                 latLng = LatLng(
                                     recording.latitude!!.toDouble(),
                                     recording.longitude!!.toDouble()
                                 ),
-                                filePath = "",
-                                hidden = recording.hidden
+                                filePath = recording.filePath ?: "",
+                                hidden = null
                             )
                             allRecordingsInfo.add(displayedRecording)
                         }
                     }
-
-                    //debug
-                    for (rec in localRecordings!!) {
-                        Log.d("UserRecordingsViewModel", "${rec.id}")
-                    }
                     _displayedRecordings.postValue(allRecordingsInfo)
                 } else {
-                    Log.d("UserRecordingsViewModel", "Non ci sono audio remoti dell'utente.")
+                    Log.d("UserRecordingsViewModel", "Non ci sono audio locali dell'utente.")
                 }
             } catch (e: Exception) {
                 Log.e("UserRecordingsViewModel", "Eccezione durante il fetch: ${e.message}")
                 _viewMessage.value = "Errore durante il fetch dei brani"
-
-                /*
-                if(e == HttpException){
-                    TODO:mostra solo i dati locali
-                }
-
-                 */
             }
         }
     }
 
-
+    
     fun hideRecording(songId: Int) {
         viewModelScope.launch {
             try {
@@ -201,12 +161,12 @@ class UserRecordingsViewModel(private val audioRepository: AudioRepository) : Vi
         viewModelScope.launch {
             try {
                 val localResult = audioRepository.getLocalAudioById(songId)
-                if (localResult.isSuccess){
-                    if(localResult.getOrNull()!=null) {
+                if (localResult.isSuccess) {
+                    if (localResult.getOrNull() != null) {
                         _audioInfo.value = localResult.getOrNull()!!
                     }
                 }
-                if(!localResult.isSuccess || _audioInfo.value == null){
+                if (!localResult.isSuccess || _audioInfo.value == null) {
                     val remoteResult = audioRepository.fetchAudioById(songId)
                     if (remoteResult.isSuccess) {
                         val audioResponse = remoteResult.getOrNull()
@@ -228,15 +188,17 @@ class UserRecordingsViewModel(private val audioRepository: AudioRepository) : Vi
                         _audioInfo.value = audioEntity
                     }
                 }
-            }
-            catch (e: Exception) {
-                Log.e("UserRecordingsViewModel", "Impossibile mostrare i dettagli del brano: ${e.message}")
+            } catch (e: Exception) {
+                Log.e(
+                    "UserRecordingsViewModel",
+                    "Impossibile mostrare i dettagli del brano: ${e.message}"
+                )
                 _viewMessage.value = "C'è stato un errore"
             }
         }
     }
 
-    fun resetAudioInfo(){
+    fun resetAudioInfo() {
         _audioInfo.value = null
     }
 }

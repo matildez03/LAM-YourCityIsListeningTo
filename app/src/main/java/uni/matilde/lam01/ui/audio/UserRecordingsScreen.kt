@@ -105,7 +105,7 @@ fun UserRecordingsScreen(
                             showAudioInfo = true
                         },
                         onToggleVisibility = {
-                            if (recording.hidden) {
+                            if (recording.hidden != null && recording.hidden == true) {
                                 viewModel.showRecording(recording.id)
                             } else {
                                 viewModel.hideRecording(recording.id)
@@ -233,11 +233,12 @@ fun RecordingItem(
                 Button(
                     onClick = onToggleVisibility,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (recording.hidden) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                        containerColor = if (recording.hidden != null && recording.hidden) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
+                    ),
+                    enabled = (recording.hidden!=null)
                 ) {
-                    Text(if (recording.hidden) "Mostra" else "Nascondi")
+                    Text(if (recording.hidden != null && recording.hidden) "Mostra" else "Nascondi")
                 }
 
                 Button(
@@ -245,7 +246,8 @@ fun RecordingItem(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error,
                         contentColor = MaterialTheme.colorScheme.onError
-                    )
+                    ),
+                    enabled = (recording.hidden!=null)
                 ) {
                     Text("Elimina")
                 }
