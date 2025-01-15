@@ -174,7 +174,8 @@ fun MainMapScreen(
             .collect { cameraPosition ->
                 viewModel.fetchMarkersForVisibleArea(
                     center = cameraPosition.target, // Centro della mappa
-                    zoomLevel = cameraPosition.zoom // Livello di zoom
+                    zoomLevel = cameraPosition.zoom ,// Livello di zoom
+                    filter = filterText
                 )
             }
     }

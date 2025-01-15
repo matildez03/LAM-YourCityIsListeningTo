@@ -159,7 +159,7 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
         }
     }
 
-    fun fetchMarkersForVisibleArea(center: LatLng, zoomLevel: Float) {
+    fun fetchMarkersForVisibleArea(center: LatLng, zoomLevel: Float, filter: String) {
         viewModelScope.launch {
             if (_allMarkers.value.isNullOrEmpty()) {
                 fetchAllMarkers()
@@ -167,9 +167,14 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
             val allMarkers = _allMarkers.value.orEmpty()
             val result = mapRepository.getMarkersForZoom(allMarkers, center, zoomLevel)
             if (result.isSuccess) {
-                val markersResult = result.getOrNull()
+                val markersResult = result.getOrNull()?.filter { marker ->
+                    applyFilter(marker, filter)
+                }
                 if (markersResult != null) {
                     _nearbyMarkers.postValue(markersResult!!)
+                    if(filter!=null && filter.trim()!=""){
+                        fetchFilteredMarkers(filter)
+                    }
                     _shownMarkers.postValue(markersResult!!)
                 }
                 Log.d(
@@ -181,6 +186,13 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
                 Log.e("MapViewModel", "Errore: ${result.exceptionOrNull()?.message}")
             }
         }
+    }
+
+    private fun applyFilter(marker: MapMarker, filter: String): Boolean {
+        if (filter.isEmpty()) return true
+        // Logica del filtro: verifica che il marker soddisfi i criteri del filtro
+        // Esempio: controllare se un attributo del marker contiene il filtro
+        return marker.audioId.toString().contains(filter, ignoreCase = true) // Adatta ai tuoi criteri
     }
 
 
