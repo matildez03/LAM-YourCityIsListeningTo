@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -66,18 +65,19 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.data.remote.models.AudioResponse
-import uni.matilde.lam01.ui.DrawerContent
+import uni.matilde.lam01.ui.MenuContent
 import uni.matilde.lam01.ui.audio.AudioInfoBottomSheet
 import uni.matilde.lam01.ui.audio.AudioRecordingDialog
 import uni.matilde.lam01.ui.audio.AudioViewModel
 import uni.matilde.lam01.ui.auth.AuthViewModel
-import androidx.compose.ui.tooling.preview.Preview
 
 
 @Composable
@@ -86,8 +86,7 @@ fun MainMapScreen(
     authViewModel: AuthViewModel,
     audioViewModel: AudioViewModel,
     navController: NavController,
-    preferencesHelper: PreferencesHelper,
-    onLogout:()->Unit
+    preferencesHelper: PreferencesHelper
 ) {
 
 
@@ -101,7 +100,6 @@ fun MainMapScreen(
     val hasLocationPermission by viewModel.hasLocationPermission.collectAsState()
     // Ottenere il nome della posizione
     val locationName by viewModel.locationName.observeAsState("Posizione sconosciuta")
-    val audioResponse by viewModel.audio.observeAsState() // Osserva il risultato di getAudio
     val coroutineScope = rememberCoroutineScope()
     var selectedAudio by remember { mutableStateOf<AudioResponse?>(null) }
     var selectedLocationName by remember { mutableStateOf<String?>(null) }
@@ -184,13 +182,8 @@ fun MainMapScreen(
     ModalNavigationDrawer(drawerState = drawerState,
         gesturesEnabled = false, // Disabilita l'apertura tramite gesture
         drawerContent = {
-            DrawerContent(
+            MenuContent(
                 navController,
-                onClose = { scope.launch { drawerState.close() } },
-                onLogout = {
-                    onLogout()
-                    navController.navigate("login"){popUpTo("login"){inclusive=true} }
-                },
                 authViewModel = authViewModel,
                 preferencesHelper = PreferencesHelper(context)
             )
@@ -208,9 +201,7 @@ fun MainMapScreen(
                     title = { Text("Mappa", color = MaterialTheme.colorScheme.onPrimary) },
                     navigationIcon = {
                         IconButton(onClick = {
-                            scope.launch {
-                                drawerState.open()
-                            }
+                            navController.navigate("menu")
                             Log.d("click event", "Button di apertura menù cliccato")
                         }) {
                             Icon(
@@ -293,29 +284,34 @@ fun MainMapScreen(
                             } else {
                                 Marker(
                                     state = MarkerState(position = marker.position),
-                                    snippet = "Dettagli registrazione", onClick = {
+                                    snippet = "Dettagli registrazione",
+                                    onClick = {
                                         coroutineScope.launch {
-                                            // Ottieni il nome della posizione in una coroutine
+
                                             val positionName = viewModel.getLocationName(
                                                 context = context,
                                                 latitude = marker.position.latitude,
                                                 longitude = marker.position.longitude
                                             )
 
-                                            viewModel.getAudioInfo(marker.audioId)
-                                            audioResponse?.let { it1 ->
-                                                Log.d(
-                                                    "MainMapScreen",
-                                                    "informazioni ottenute: ${it1.toString()}"
-                                                )
-                                                selectedAudio = it1
+                                            val audioInfo =
+                                                viewModel.getAudioInfo(marker.audioId)
+
+                                            Log.d("AudioInfo", "Risultato ottenuto: $audioInfo")
+
+                                            // Associa i dati solo a questo marker
+                                            if (audioInfo != null) {
+                                                selectedAudio = audioInfo
                                                 selectedLocationName = positionName
                                                 bottomSheetState.show()
-                                            } ?: Toast.makeText(
-                                                context,
-                                                "Impossibile caricare le informaioni del brano.",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Informazioni non disponibili.",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+
                                         }
                                         Log.d("Marker", "Marker cliccato: ${marker.position}")
                                         false // Ritorna false per mantenere il comportamento predefinito del marker

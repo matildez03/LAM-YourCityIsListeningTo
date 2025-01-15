@@ -11,7 +11,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.AlertDialog
@@ -23,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,15 +29,17 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.setValue
-import org.w3c.dom.Text
 import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.ui.auth.AuthViewModel
 
 
 @Composable
-fun DrawerContent(navController: NavController, onClose: () -> Unit, onLogout: ()->Unit, authViewModel: AuthViewModel, preferencesHelper: PreferencesHelper) {
+fun MenuContent(
+    navController: NavController,
+    authViewModel: AuthViewModel,
+    preferencesHelper: PreferencesHelper
+) {
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     val username = preferencesHelper.getUsername()
@@ -55,7 +55,13 @@ fun DrawerContent(navController: NavController, onClose: () -> Unit, onLogout: (
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
         ) {
-            IconButton(onClick = onClose) {
+            IconButton(onClick = {
+                navController.navigate("map"){
+                    popUpTo("map"){
+                        inclusive=true
+                    }
+                }
+            }) {
                 Icon(Icons.Default.Close, contentDescription = "Chiudi menu")
                 Log.d("click event", "Button di apertura menù cliccato")
 
@@ -79,19 +85,16 @@ fun DrawerContent(navController: NavController, onClose: () -> Unit, onLogout: (
         HorizontalDivider()
         DrawerItem("Le mie registrazioni", Icons.Default.Favorite, onClick = {
             navController.navigate("audios")
-            onClose()
         })
 
         DrawerItem("Notifiche", Icons.Default.Email, onClick = {
             navController.navigate("notifications")
-            onClose()
         })
 
         DrawerItem("Map", Icons.Default.Place, onClick = {
             if (navController.currentDestination?.route != "map") {
                 navController.navigate("map")
             }
-            onClose()
         })
 
         Spacer(modifier = Modifier.weight(1f)) // Spinge il bottone di Logout in basso
@@ -163,11 +166,13 @@ fun DrawerContent(navController: NavController, onClose: () -> Unit, onLogout: (
             confirmButton = {
                 TextButton(onClick = {
                     showLogoutDialog = false
-                    onClose()
-                    onLogout()
-                    navController.navigate("login") {
-                        popUpTo("login") { inclusive = true } // Ripulisce lo stack di navigazione
+                    authViewModel.logout()
+                    navController.navigate(route = "login") {
+                        popUpTo(route = "login") {
+                            inclusive = true
+                        } // Ripulisce lo stack di navigazione
                     }
+
                 }) {
                     Text("Conferma")
                 }

@@ -18,6 +18,7 @@ import uni.matilde.lam01.data.remote.models.DetailResponse
 import uni.matilde.lam01.data.remote.models.MyAudiosResponse
 import uni.matilde.lam01.data.remote.models.UploadAudioResponse
 import uni.matilde.lam01.ui.map.TokenExpiredException
+import uni.matilde.lam01.util.Exceptions.AuthenticationException
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -77,59 +78,6 @@ class AudioRepository(
                     file = file
                 )
                 handleRetrofitResponse(response)
-            }
-        }
-    }
-
-    suspend fun uploadAndSaveAudio(
-        username: String,
-        filePath: String,
-        latitude: Double,
-        longitude: Double,
-        locationName: String
-    ): Result<AudioEntity> {
-        return handleApiCall {
-            try {
-                val file = File(filePath)
-                val requestFile = file.asRequestBody("audio/mpeg".toMediaTypeOrNull())
-                val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
-
-                val audioResponse = uploadAudio(longitude, latitude, body).getOrThrow()
-                // Ottiene l'id del brano nel server
-                val serverAudioId = fetchMyAudios()
-                    .getOrNull()
-                    ?.lastOrNull()
-                    ?.id
-                    ?: throw IllegalStateException("Impossibile ottenere l'ID audio dal server.")
-
-                // Ottine il timestamp
-                val currentDateTime = Date()
-                val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                val formattedTimestamp = formatter.format(currentDateTime).toString()
-
-                // Salva in locale
-                val audioEntity = AudioEntity(
-                    id = serverAudioId!!,
-                    username = username,
-                    locationName = locationName,
-                    filePath = filePath,
-                    bpm = audioResponse.bpm,
-                    danceability = audioResponse.danceability,
-                    loudness = audioResponse.loudness,
-                    mood = audioResponse.mood.maxByOrNull { it.value }?.key,
-                    genre = audioResponse.genre.maxByOrNull { it.value }?.key,
-                    instrument = audioResponse.instrument.maxByOrNull { it.value }?.key,
-                    latitude = latitude,
-                    longitude = longitude,
-                    timestamp = formattedTimestamp
-                )
-                saveAudioLocally(audioEntity)
-
-                Log.i("AudioRepository", "Audio caricato con successo")
-                Result.success(audioEntity)
-            } catch (e: Exception) {
-                Log.e("AudioRepository", "Errore durante l'upload con salvataggio: ${e.message}")
-                Result.failure(e)
             }
         }
     }
@@ -214,7 +162,6 @@ class AudioRepository(
         return request(token)
     }
 
-
     /**
      * Funzione generica per convertire una risposta Retrofit in un oggetto Result
      */
@@ -260,5 +207,91 @@ class AudioRepository(
             Log.e("AudioRepository", "Errore nel recupero dei dati locali: ${e.message}")
             Result.failure(e)
         }
+    }
+
+    suspend fun deleteAllUserRemoteAudios(){
+        try{
+            val username = preferencesHelper.getUsername()
+            if(username != null) {
+                Result.success(audioDao.deleteByUsername(username))
+            } else{
+                throw AuthenticationException("Errore di autenticazione")
+            }
+        } catch (e: Exception) {
+            Log.e("AudioRepository", "Errore nell'eliminazione locali: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    /*
+    ****************************************************************************************
+    funzioni su dati remoti e locali
+     */
+
+    suspend fun uploadAndSaveAudio(
+        username: String,
+        filePath: String,
+        latitude: Double,
+        longitude: Double,
+        locationName: String
+    ): Result<AudioEntity> {
+        return handleApiCall {
+            try {
+                val file = File(filePath)
+                val requestFile = file.asRequestBody("audio/mpeg".toMediaTypeOrNull())
+                val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
+
+                val audioResponse = uploadAudio(longitude, latitude, body).getOrThrow()
+                // Ottiene l'id del brano nel server
+                val serverAudioId = fetchMyAudios()
+                    .getOrNull()
+                    ?.lastOrNull()
+                    ?.id
+                    ?: throw IllegalStateException("Impossibile ottenere l'ID audio dal server.")
+
+                // Ottine il timestamp
+                val currentDateTime = Date()
+                val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                val formattedTimestamp = formatter.format(currentDateTime).toString()
+
+                // Salva in locale
+                val audioEntity = AudioEntity(
+                    id = serverAudioId!!,
+                    username = username,
+                    locationName = locationName,
+                    filePath = filePath,
+                    bpm = audioResponse.bpm,
+                    danceability = audioResponse.danceability,
+                    loudness = audioResponse.loudness,
+                    mood = audioResponse.mood.maxByOrNull { it.value }?.key,
+                    genre = audioResponse.genre.maxByOrNull { it.value }?.key,
+                    instrument = audioResponse.instrument.maxByOrNull { it.value }?.key,
+                    latitude = latitude,
+                    longitude = longitude,
+                    timestamp = formattedTimestamp
+                )
+                saveAudioLocally(audioEntity)
+
+                Log.i("AudioRepository", "Audio caricato con successo")
+                Result.success(audioEntity)
+            } catch (e: Exception) {
+                Log.e("AudioRepository", "Errore durante l'upload con salvataggio: ${e.message}")
+                Result.failure(e)
+            }
+        }
+    }
+
+
+    suspend fun deleteLocalAndRemoteUserAudios(username: String){
+        //rimozione brani in remoto
+        val myaudios = fetchMyAudios().getOrNull()
+        if(myaudios!=null) {
+            for (audio in myaudios) {
+                val id = audio.id
+                deleteSong(id)
+            }
+        }
+        //rimozione brani in locale
+        deleteAllUserRemoteAudios()
     }
 }

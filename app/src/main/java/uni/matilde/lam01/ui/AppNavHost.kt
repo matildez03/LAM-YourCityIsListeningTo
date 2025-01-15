@@ -26,7 +26,6 @@ fun AppNavHost(
     isAuthenticated: Boolean,
     preferencesHelper: PreferencesHelper,
     onLoginSuccess: (String) -> Unit,
-    onLogout: () -> Unit,
     navigateTo: String?
 ) {
     val navController = rememberNavController()
@@ -34,7 +33,7 @@ fun AppNavHost(
     // Configura l'handler globale
     LaunchedEffect(navController) {
         Thread.setDefaultUncaughtExceptionHandler(
-            GlobalExceptionHandler(navController, onLogout)
+            GlobalExceptionHandler(navController)
         )
     }
 
@@ -76,7 +75,6 @@ fun AppNavHost(
 
 
 
-
     NavHost(
         navController = navController,
         startDestination = if (isAuthenticated) "map" else "login"
@@ -99,12 +97,17 @@ fun AppNavHost(
                 factory = authViewModelFactory // Passa la factory alla SignUpScreen
             )
         }
+
         composable("map") { //la schermata principale è direttamente la mappa
-            MainMapScreen(viewModel = mapViewModel, navController = navController, authViewModel = authViewModel, audioViewModel = audioViewModel, preferencesHelper = preferencesHelper, onLogout = onLogout)
+            MainMapScreen(viewModel = mapViewModel, navController = navController, authViewModel = authViewModel, audioViewModel = audioViewModel, preferencesHelper = preferencesHelper)
+        }
+
+        composable("menu") {
+            MenuContent(navController=navController,authViewModel=authViewModel,preferencesHelper=preferencesHelper)
         }
 
         composable("audios") {
-            UserRecordingsScreen(viewModel=userRecordingsViewModel, onBack = { navController.popBackStack() })
+            UserRecordingsScreen(viewModel=userRecordingsViewModel, onBack = {navController.navigate("menu")})
         }
 
         composable("notifications") {

@@ -51,9 +51,6 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
     private val _locationName = MutableLiveData<String>()
     val locationName: LiveData<String> get() = _locationName
 
-    private val _audio = MutableLiveData<AudioResponse>()
-    val audio: LiveData<AudioResponse> get() = _audio
-
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> get() = _errorMessage
 
@@ -179,16 +176,19 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
         _userLocation.postValue(location) // Aggiorna il valore della posizione utente
     }
 
-    fun getAudioInfo(audioId: Int) {
-        viewModelScope.launch {
-            val result = mapRepository.getAudioInfo(audioId)
-            if (result.isSuccess) {
-                val tempAudio = result.getOrNull()
-                tempAudio?.let {
-                    _audio.postValue(it)
+    suspend fun getAudioInfo(audioId: Int): AudioResponse? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val result = mapRepository.getAudioInfo(audioId)
+                if (result.isSuccess) {
+                    result.getOrNull()
+                } else {
+                    Log.e("MapViewModel", "Errore nel recupero dell'audio con id $audioId")
+                    null
                 }
-            } else {
-                Log.e("MapViewModel", "Errore nel recupero dell'audio con id $audioId")
+            } catch (e: Exception) {
+                Log.e("MapViewModel", "Eccezione durante il recupero dell'audio: ${e.message}")
+                null
             }
         }
     }

@@ -9,6 +9,7 @@ import uni.matilde.lam01.data.local.AppDatabase
 import uni.matilde.lam01.data.remote.repository.AudioRepository
 import uni.matilde.lam01.data.remote.repository.AuthRepository
 import uni.matilde.lam01.data.remote.repository.MapRepository
+import uni.matilde.lam01.session.UserSessionManager
 import uni.matilde.lam01.util.NotificationHelper
 import uni.matilde.lam01.util.recorder.AndroidAudioRecorder
 
@@ -35,6 +36,9 @@ class App : Application() {
     lateinit var appDatabase: AppDatabase
         private set
 
+    lateinit var userSessionManager: UserSessionManager
+        private set
+
 
     override fun onCreate() {
         super.onCreate()
@@ -43,7 +47,6 @@ class App : Application() {
 
 
         instance = this
-
         preferencesHelper = PreferencesHelper(this)
         appDatabase = AppDatabase.getDatabase(this)
         tokenManager = TokenManager(preferencesHelper)
@@ -56,6 +59,7 @@ class App : Application() {
             audioDao = appDatabase.audioDao()
         )
         mapRepository = MapRepository.getInstance(audioRepository = audioRepository)
+        userSessionManager = UserSessionManager(preferencesHelper, authRepository, audioRepository)
 
     }
 

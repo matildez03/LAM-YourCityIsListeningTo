@@ -6,6 +6,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import uni.matilde.lam01.App
 import uni.matilde.lam01.data.TokenManager
 import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.data.remote.repository.AuthRepository
@@ -24,7 +25,6 @@ class AuthViewModel(
     // MutableLiveData privata per gestire lo stato internamente
     private val _authState = MutableLiveData<AuthState?>()
     val authState: LiveData<AuthState?> = _authState
-
 
 
     fun resetState() {
@@ -63,20 +63,21 @@ class AuthViewModel(
         }
     }
 
+    fun logout(){
+        viewModelScope.launch {
+            App.instance.userSessionManager.onLogout()
+        }
+    }
+
     fun deleteAccount() {
         _authState.value = AuthState.Loading
         viewModelScope.launch {
             try {
                 Log.d("Delete","richiesta di eliminazione ricevuta")
-                val response = repository.deleteAccount()
-                if (response.isSuccess) {
-                    _authState.value = AuthState.Success("Account eliminato con successo.")
-                    Log.d("Delete","Account eliminato con successo.");
-                } else {
-                    _authState.value = AuthState.Error("Errore durante l'eliminazione dell'account.")
-                }
+                App.instance.userSessionManager.onAccountDelete()
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message)
+                _authState.value = AuthState.Error("Errore durante l'eliminazione dell'account.")
+                Log.e("AuthViewModel","Errore durante l'eliminazione: ${e.message}")
             }
         }
     }
