@@ -54,6 +54,9 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> get() = _errorMessage
 
+    private val _isLoading = MutableLiveData(false)
+    val isLoading: LiveData<Boolean> get() = _isLoading
+
     fun checkLocationPermission(context: Context) {
         viewModelScope.launch {
             _hasLocationPermission.value = ContextCompat.checkSelfPermission(
@@ -62,6 +65,7 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
             ) == PackageManager.PERMISSION_GRANTED
         }
     }
+
 
     /* Funzione per accedere al nome della posizione dell'utente
     Eseguito su contesto i/o perchè si tratta di un' operazione
@@ -108,16 +112,24 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
 
     fun fetchFilteredMarkers(filter: String) {
         viewModelScope.launch {
-            //filtra solo tra gli audio vicini
-            if (_nearbyMarkers.value.isNullOrEmpty()) {
-                fetchAllMarkers()
-            }
-            val result = mapRepository.getFilteredMarkers(_allMarkers.value!!, filter).getOrNull()
-            if (result != null) {
-                _filteredMarkers.postValue(result!!)
-                _shownMarkers.postValue(result!!)
-            } else {
-                _errorMessage.postValue("Non ci sono risultati dal tuo filtro!")
+            _isLoading.postValue(true) // Mostra il caricamento
+            try {
+                //filtra solo tra gli audio vicini
+                if (_nearbyMarkers.value.isNullOrEmpty()) {
+                    fetchAllMarkers()
+                }
+                val result =
+                    mapRepository.getFilteredMarkers(_allMarkers.value!!, filter).getOrNull()
+                if (result != null) {
+                    _filteredMarkers.postValue(result!!)
+                    _shownMarkers.postValue(result!!)
+                } else {
+                    _errorMessage.postValue("Non ci sono risultati dal tuo filtro!")
+                }
+            } catch (e: Exception) {
+                _errorMessage.postValue("Errore durante il caricamento.")
+            } finally {
+                _isLoading.postValue(false) // Nascondi il caricamento
             }
             Log.d("MapViewModel", "Marker caricati: ${_filteredMarkers.value?.size ?: 0}")
         }

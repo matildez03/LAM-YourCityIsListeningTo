@@ -6,10 +6,12 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -30,6 +32,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -109,6 +112,8 @@ fun MainMapScreen(
 
     val userLocation by viewModel.userLocation.observeAsState()
     val markers by viewModel.shownMarkers.observeAsState()
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val isLoading by viewModel.isLoading.observeAsState(false)
 
 
     // Launcher per richiedere i permessi
@@ -174,9 +179,6 @@ fun MainMapScreen(
             }
     }
 
-
-    val scope = rememberCoroutineScope()
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
 
 
     ModalNavigationDrawer(drawerState = drawerState,
@@ -339,6 +341,15 @@ fun MainMapScreen(
         }
     }
 
+    if (isLoading) {
+        // Mostra un indicatore di caricamento
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    }
 
     // Popup di registrazione
     if (showRecordingDialog) {
