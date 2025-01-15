@@ -132,7 +132,8 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
         context: Context,
         filePath: String,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        requireWifi: Boolean
     ) {
         try {
             WorkScheduler.scheduleAudioUpload(
@@ -141,7 +142,8 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
                 context = context,
                 filePath = filePath,
                 latitude = latitude,
-                longitude = longitude
+                longitude = longitude,
+                requireWifi = requireWifi
             )
         } catch (e: Exception) {
             Log.e("AudioViewModel", "Eccezione durante lo scheduling dell'upload: ${e.message}")

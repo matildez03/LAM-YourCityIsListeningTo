@@ -6,6 +6,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 import uni.matilde.lam01.App
 import uni.matilde.lam01.data.TokenManager
 import uni.matilde.lam01.data.local.PreferencesHelper
@@ -42,7 +43,9 @@ class AuthViewModel(
             if (result.isSuccess) {
                 _authState.value = AuthState.Success(result.getOrNull()!!)
             } else {
-                _authState.value = AuthState.Error(result.exceptionOrNull()?.message)
+                val exception = result.exceptionOrNull()
+                val errorMessage = exception?.message ?: "Errore sconosciuto. Riprova più tardi o controlla la tua connessione."
+                _authState.value = AuthState.Error(errorMessage)
             }
         }
     }
@@ -58,7 +61,10 @@ class AuthViewModel(
             if (result.isSuccess) {
                 _authState.value = AuthState.Success(result.getOrNull()!!)
             } else {
-                _authState.value = AuthState.Error(result.exceptionOrNull()?.message)
+                val exception = result.exceptionOrNull()
+                val errorMessage = exception?.message
+                    ?: "Errore sconosciuto. Riprova più tardi o controlla la tua connessione."
+                _authState.value = AuthState.Error(errorMessage)
             }
         }
     }

@@ -71,6 +71,7 @@ fun AudioRecordingDialog(
     val errorMessage by audioViewModel.errorMessage.observeAsState()
 
     var showWifiDialog by remember { mutableStateOf(false) }
+    var showNoConnectionDialog by remember { mutableStateOf(false) }
     val uploadStatus by audioViewModel.uploadStatus.observeAsState()
 
 
@@ -165,7 +166,8 @@ fun AudioRecordingDialog(
                         context = context,
                         filePath = mp3AudioPath!!,
                         latitude = userLocation.latitude,
-                        longitude = userLocation.longitude
+                        longitude = userLocation.longitude,
+                        requireWifi = true
                     )
                     Toast.makeText(
                         context,
@@ -199,6 +201,62 @@ fun AudioRecordingDialog(
                     showWifiDialog = false
                 }) {
                     Text("Procedi")
+                }
+            }
+        )
+    }
+
+    if(showNoConnectionDialog){
+        AlertDialog(
+            onDismissRequest = { showWifiDialog = false },
+            title = { Text("Connessione non disponibile") },
+            text = { Text("Vuoi attendere una connessione per completare il caricamento?") },
+            confirmButton = {
+                Button(onClick = {
+                    // Posticipa in attesa di Wi-Fi
+                    audioViewModel.clearUploadStatus()
+                    audioViewModel.scheduleAudioUpload(
+                        username = username,
+                        locationName = locationName,
+                        context = context,
+                        filePath = mp3AudioPath!!,
+                        latitude = userLocation.latitude,
+                        longitude = userLocation.longitude,
+                        requireWifi = true
+                    )
+                    Toast.makeText(
+                        context,
+                        "Caricamento pianificato con connessione Wi-Fi",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    showWifiDialog = false
+                    onDismiss()
+                }) {
+                    Text("Attendi Wi-Fi")
+                }
+            },
+            dismissButton = {
+                Button(onClick = {
+                    // Posticipa indipendentemente dalla rete
+                    audioViewModel.clearUploadStatus()
+                    audioViewModel.scheduleAudioUpload(
+                        username = username,
+                        locationName = locationName,
+                        context = context,
+                        filePath = mp3AudioPath!!,
+                        latitude = userLocation.latitude,
+                        longitude = userLocation.longitude,
+                        requireWifi = false
+                    )
+                    Toast.makeText(
+                        context,
+                        "Caricamento pianificato per connessione disponibile",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    showWifiDialog = false
+                    onDismiss()
+                }) {
+                    Text("Attendi Connessione")
                 }
             }
         )
@@ -354,19 +412,24 @@ fun AudioRecordingDialog(
         confirmButton = {
             Button(onClick = {
                 if (mp3AudioPath != null) {
-                    //controlla connessione wi fi
-                    if (!isConnectedToWifi(context)) {
-                        showWifiDialog = true
-                    } else {
-                        audioViewModel.clearUploadStatus()
-                        audioViewModel.uploadAudio(
-                            username,
-                            mp3AudioPath!!,
-                            userLocation.latitude,
-                            userLocation.longitude,
-                            locationName
-                        )
-                        Log.d("AudioViewModel", "Caricamento dell'audio: ${mp3AudioPath}")
+                    when {
+                        isConnectedToWifi(context) -> {
+                            audioViewModel.clearUploadStatus()
+                            audioViewModel.uploadAudio(
+                                username,
+                                mp3AudioPath!!,
+                                userLocation.latitude,
+                                userLocation.longitude,
+                                locationName
+                            )
+                            Toast.makeText(context, "Caricamento in corso con Wi-Fi", Toast.LENGTH_SHORT).show()
+                        }
+                        isConnectedToData(context) -> {
+                            showWifiDialog = true
+                        }
+                        else -> {
+                            showNoConnectionDialog = true
+                        }
                     }
                 }
             },
@@ -407,6 +470,21 @@ fun isConnectedToWifi(context: Context): Boolean {
     } else {
         val networkInfo = connectivityManager.activeNetworkInfo
         return networkInfo != null && networkInfo.type == ConnectivityManager.TYPE_WIFI
+    }
+}
+
+fun isConnectedToData(context: Context): Boolean {
+    val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val network = connectivityManager.activeNetwork ?: return false
+        val networkCapabilities =
+            connectivityManager.getNetworkCapabilities(network) ?: return false
+        return networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+    } else {
+        val networkInfo = connectivityManager.activeNetworkInfo
+        return networkInfo != null && networkInfo.type == ConnectivityManager.TYPE_MOBILE
     }
 }
 

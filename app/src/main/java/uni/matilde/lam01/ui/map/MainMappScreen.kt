@@ -81,6 +81,7 @@ import uni.matilde.lam01.ui.audio.AudioInfoBottomSheet
 import uni.matilde.lam01.ui.audio.AudioRecordingDialog
 import uni.matilde.lam01.ui.audio.AudioViewModel
 import uni.matilde.lam01.ui.auth.AuthViewModel
+import uni.matilde.lam01.work.NetworkChangeReceiver
 
 
 @Composable
@@ -114,6 +115,11 @@ fun MainMapScreen(
     val markers by viewModel.shownMarkers.observeAsState()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val isLoading by viewModel.isLoading.observeAsState(false)
+    val networkChangeReceiver = remember {
+        NetworkChangeReceiver {
+            enableLocation(fusedLocationClient, viewModel)
+        }
+    }
 
 
     // Launcher per richiedere i permessi

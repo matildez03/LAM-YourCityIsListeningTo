@@ -59,7 +59,7 @@ class App : Application() {
             audioDao = appDatabase.audioDao()
         )
         mapRepository = MapRepository.getInstance(audioRepository = audioRepository)
-        userSessionManager = UserSessionManager(preferencesHelper, authRepository, audioRepository)
+        userSessionManager = UserSessionManager(preferencesHelper, authRepository, audioRepository, tokenManager)
 
     }
 

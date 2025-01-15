@@ -14,11 +14,19 @@ object WorkScheduler {
         context: Context,
         filePath: String,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        requireWifi: Boolean
     ) {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.UNMETERED) // Solo su Wi-Fi
-            .build()
+
+        val constraintsBuilder = Constraints.Builder()
+
+        if (requireWifi) {
+            constraintsBuilder.setRequiredNetworkType(NetworkType.UNMETERED) // Solo su Wi-Fi
+        } else {
+            constraintsBuilder.setRequiredNetworkType(NetworkType.CONNECTED) // Connessione dati o Wi-Fi
+        }
+
+        val constraints = constraintsBuilder.build()
 
         val inputData = Data.Builder()
             .putString("username", username)

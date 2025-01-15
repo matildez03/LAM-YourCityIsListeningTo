@@ -69,4 +69,10 @@ class TokenManager(private val preferencesHelper: PreferencesHelper) {
     // Controlla se il token ha bisogno di essere rinnovato: è scaduto o non è stato impostato
     fun needsTokenRenewal(): Boolean = isTokenExpired() || token == null
 
+    fun reset() {
+        clearToken()
+        timerJob = null // Elimina il riferimento al job del timer
+    }
+
+
 }

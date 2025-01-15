@@ -55,7 +55,6 @@ class AuthRepository(
                     Result.success(it)
                 } ?: Result.failure(Exception("Risposta vuota"))
             } else if (response.code() == 400) {
-                // Caso specifico: Username già registrato
                 val errorBody = response.errorBody()?.string()
                 val errorResponse = Gson().fromJson(errorBody, DetailResponse::class.java)
                 Result.failure(Exception(errorResponse?.detail ?: "Errore sconosciuto"))
@@ -90,15 +89,13 @@ class AuthRepository(
                     Result.success(tokenResponse)
                 } ?: Result.failure(Exception("Risposta vuota"))
             } else {
-                Result.failure(
-                    Exception(
-                        "Errore durante il login: ${
-                            response.errorBody()?.string()
-                        }"
-                    )
-                )
+                when (response.code()) {
+                    400 -> Result.failure(Exception("Credenziali errate"))
+                    else -> Result.failure(Exception("Errore sconosciuto: ${response.code()}"))
+                }
             }
         }
+
     }
 
 

@@ -82,25 +82,32 @@ fun SignUpScreen(
 
         // Stato di registrazione
         when (val state = signUpState) {
-            is AuthState.Loading -> CircularProgressIndicator()
+            is AuthState.Loading -> CircularProgressIndicator(modifier = Modifier.padding(16.dp))
             is AuthState.Success<*> -> {
-                Text(text = "Registrazione avvenuta con successo!", color = MaterialTheme.colorScheme.primary)
-                // Resetta lo stato e torna al login
-                viewModel.resetAuthState()
-                navigateToLogin()
+                Text(
+                    text = "Registrazione avvenuta con successo!",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(8.dp)
+                )
+                // Resetta lo stato per evitare comportamenti non desiderati al rientro
+                LaunchedEffect(Unit) {
+                    viewModel.resetAuthState()
+                    navigateToLogin()
+                }
             }
             is AuthState.Error -> {
                 Text(
-                    text = state.message ?: "Errore sconosciuto",
-                    color = MaterialTheme.colorScheme.error
+                    text = state.message ?: "Errore sconosciuto durante la registrazione",
+                    modifier = Modifier.padding(8.dp)
                 )
             }
             else -> {
-                // Stato iniziale o fallback
                 Text(
-                    text = "Inserisci le tue credenziali per effettuare il login.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 16.dp)
+                    text = "Compila i campi per registrarti.",
+                    color = MaterialTheme.colorScheme.onBackground,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(8.dp)
                 )
             }
         }
