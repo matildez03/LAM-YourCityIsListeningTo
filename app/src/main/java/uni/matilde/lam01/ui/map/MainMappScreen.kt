@@ -180,7 +180,7 @@ fun MainMapScreen(
             .collect { cameraPosition ->
                 viewModel.fetchMarkersForVisibleArea(
                     center = cameraPosition.target, // Centro della mappa
-                    zoomLevel = cameraPosition.zoom ,// Livello di zoom
+                    zoomLevel = cameraPosition.zoom,// Livello di zoom
                     filter = filterText
                 )
             }
@@ -336,7 +336,20 @@ fun MainMapScreen(
                         modifier = Modifier.padding(all = 16.dp)
                     )
                     Button(
-                        onClick = { showRecordingDialog = true },
+                        onClick = {
+                            if (locationName.equals("Posizione sconosciuta")) {
+                                userLocation?.let { position ->
+                                    {
+                                        viewModel.fetchLocationName(
+                                            context,
+                                            position.latitude,
+                                            position.longitude
+                                        )
+                                    }
+                                }
+                            }
+                            showRecordingDialog = true
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp)

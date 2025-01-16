@@ -19,6 +19,9 @@ import uni.matilde.lam01.ui.auth.LoginScreen
 import uni.matilde.lam01.ui.auth.SignUpScreen
 import uni.matilde.lam01.ui.map.MainMapScreen
 import uni.matilde.lam01.ui.map.MapViewModel
+import uni.matilde.lam01.ui.stats.StatisticsScreen
+import uni.matilde.lam01.ui.stats.StatisticsViewModel
+import uni.matilde.lam01.ui.stats.StatisticsViewModelFactory
 import uni.matilde.lam01.util.Exceptions.GlobalExceptionHandler
 
 @Composable
@@ -73,6 +76,12 @@ fun AppNavHost(
         factory = userRecordingsViewModelFactory
     )
 
+    val statisticsViewModelFactory = StatisticsViewModelFactory(App.instance.audioRepository)
+    val statisticsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+    modelClass = StatisticsViewModel::class.java,
+    factory = statisticsViewModelFactory
+    )
+
 
 
     NavHost(
@@ -110,8 +119,8 @@ fun AppNavHost(
             UserRecordingsScreen(viewModel=userRecordingsViewModel, onBack = {navController.navigate("menu")})
         }
 
-        composable("notifications") {
-            //todo:schermata delle notifiche
+        composable("stats") {
+            StatisticsScreen(statisticsViewModel, navController)
         }
     }
 }

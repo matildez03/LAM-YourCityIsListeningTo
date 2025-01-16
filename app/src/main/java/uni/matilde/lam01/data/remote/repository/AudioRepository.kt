@@ -11,6 +11,8 @@ import uni.matilde.lam01.data.TokenManager
 import uni.matilde.lam01.data.TokenService
 import uni.matilde.lam01.data.local.AudioDao
 import uni.matilde.lam01.data.local.AudioEntity
+import uni.matilde.lam01.data.local.GenreCount
+import uni.matilde.lam01.data.local.MoodCount
 import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.data.remote.models.AllAudiosResponse
 import uni.matilde.lam01.data.remote.models.AudioResponse
@@ -205,6 +207,63 @@ class AudioRepository(
             Result.success(audioDao.getById(audioId))
         } catch (e: Exception) {
             Log.e("AudioRepository", "Errore nel recupero dei dati locali: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    fun getAudioCount(): Result<Int>{
+        return try{
+            val username = preferencesHelper.getUsername()
+            if(username != null) {
+                Result.success(audioDao.getAudioCount(username))
+            } else{
+                throw AuthenticationException("Errore di autenticazione")
+            }
+        } catch (e: Exception) {
+            Log.e("AudioRepository", "Errore nell'eliminazione locali: ${e.message}")
+            Result.failure(e)
+        }
+     }
+
+    fun getAverageBpm(): Result<Double>{
+        return try{
+            val username = preferencesHelper.getUsername()
+            if(username != null) {
+                Result.success(audioDao.getAverageBpm(username)!!)
+            } else{
+                throw AuthenticationException("Errore di autenticazione")
+            }
+        } catch (e: Exception) {
+            Log.e("AudioRepository", "Errore nell'eliminazione locali: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    fun getMoodDistribution(): Result<List<MoodCount>> {
+        return try {
+            val username = preferencesHelper.getUsername()
+            if (username != null) {
+                Result.success(audioDao.getMoodDistribution(username))
+            } else {
+                throw AuthenticationException("Errore di autenticazione")
+            }
+        } catch (e: Exception) {
+            Log.e("AudioRepository", "Errore nell'eliminazione locali: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+
+    fun getGenreDistribution(): Result<List<GenreCount>>{
+        return try{
+            val username = preferencesHelper.getUsername()
+            if(username != null) {
+                Result.success(audioDao.getGenreDistribution(username))
+            } else{
+                throw AuthenticationException("Errore di autenticazione")
+            }
+        } catch (e: Exception) {
+            Log.e("AudioRepository", "Errore nell'eliminazione locali: ${e.message}")
             Result.failure(e)
         }
     }

@@ -87,8 +87,8 @@ fun MenuContent(
             navController.navigate("audios")
         })
 
-        DrawerItem("Notifiche", Icons.Default.Email, onClick = {
-            navController.navigate("notifications")
+        DrawerItem("Statistiche", Icons.Default.Email, onClick = {
+            navController.navigate("stats")
         })
 
         DrawerItem("Map", Icons.Default.Place, onClick = {

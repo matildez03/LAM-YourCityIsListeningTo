@@ -45,7 +45,6 @@ class App : Application() {
 
         NotificationHelper.createNotificationChannels(this)
 
-
         instance = this
         preferencesHelper = PreferencesHelper(this)
         appDatabase = AppDatabase.getDatabase(this)
