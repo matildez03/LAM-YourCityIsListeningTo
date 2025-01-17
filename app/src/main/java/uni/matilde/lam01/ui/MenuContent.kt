@@ -4,17 +4,22 @@ import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,7 +31,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Button
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -34,197 +44,168 @@ import androidx.compose.runtime.setValue
 import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.ui.auth.AuthViewModel
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MenuContent(
     navController: NavController,
     authViewModel: AuthViewModel,
     preferencesHelper: PreferencesHelper
 ) {
+    val username = preferencesHelper.getUsername()
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    val username = preferencesHelper.getUsername()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.primaryContainer)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Top
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
-        ) {
-            IconButton(onClick = {
-                navController.navigate("map"){
-                    popUpTo("map"){
-                        inclusive=true
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = "Profilo", color = MaterialTheme.colorScheme.onPrimary) },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        navController.navigate("map") {
+                            popUpTo("map") { inclusive = true }
+                        }
+                    }) {
+                        Icon(Icons.Default.Close, contentDescription = "Chiudi menù", tint = MaterialTheme.colorScheme.onPrimary)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                )
+            )
+        },
+        content = { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Ciao, $username",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+
+                // Menu items
+                MenuItem("Le mie registrazioni", Icons.Default.Audiotrack) {
+                    navController.navigate("audios")
+                }
+                MenuItem("Statistiche", Icons.Default.Insights) {
+                    navController.navigate("stats")
+                }
+                MenuItem("Mappa", Icons.Default.Place) {
+                    if (navController.currentDestination?.route != "map") {
+                        navController.navigate("map")
                     }
                 }
-            }) {
-                Icon(Icons.Default.Close, contentDescription = "Chiudi menu")
-                Log.d("click event", "Button di apertura menù cliccato")
 
+                Spacer(modifier = Modifier.weight(1f)) // Spingi i bottoni in basso
+
+                // Logout Button
+                Button(
+                    onClick = { showLogoutDialog = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.ExitToApp, contentDescription = "Logout")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Logout")
+                }
+
+                // Delete Account Button
+                Button(
+                    onClick = { showDeleteDialog = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Person, contentDescription = "Elimina Account")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Elimina Account")
+                }
             }
         }
+    )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
-        ) {
-            Icon(Icons.Default.Person, contentDescription = "Profilo")
-            Text(
-                "$username",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-        }
-
-        HorizontalDivider()
-        DrawerItem("Le mie registrazioni", Icons.Default.Favorite, onClick = {
-            navController.navigate("audios")
-        })
-
-        DrawerItem("Statistiche", Icons.Default.Info, onClick = {
-            navController.navigate("stats")
-        })
-
-        DrawerItem("Map", Icons.Default.Place, onClick = {
-            if (navController.currentDestination?.route != "map") {
-                navController.navigate("map")
-            }
-        })
-
-        Spacer(modifier = Modifier.weight(1f)) // Spinge il bottone di Logout in basso
-
-
-        Button(
-            onClick = { showLogoutDialog = true },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = MaterialTheme.colorScheme.error, // Colore di sfondo
-                contentColor = MaterialTheme.colorScheme.onError  // Colore del testo e delle icone
-            )
-        ) {
-            Icon(
-                Icons.Default.ExitToApp,
-                contentDescription = "Logout",
-                modifier = Modifier.padding(end = 8.dp)
-            )
-            Text("Logout")
-        }
-
-        // Pulsante di Eliminazione Account
-        Button(
-            onClick = { showDeleteDialog = true },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError
-            )
-        ) {
-            Icon(
-                Icons.Default.Person,
-                contentDescription = "Elimina Account",
-                modifier = Modifier.padding(end = 8.dp)
-            )
-            Text("Elimina Account")
-        }
-
-        // Sezione About
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp)
-        ) {
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Your City is Listening To",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-            Text(
-                text = "Versione 1.0\nSviluppata da Matilde Zoccolillo",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-        }
-    }
-    // Dialogo di conferma Logout
+    // Logout Dialog
     if (showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = {
+        ConfirmationDialog(
+            title = "Conferma Logout",
+            text = "Sei sicuro di voler effettuare il logout?",
+            onConfirm = {
                 showLogoutDialog = false
-            }, // Chiudi il dialogo se l'utente clicca fuori
-            title = { Text("Conferma Logout") },
-            text = { Text("Sei sicuro di voler effettuare il logout?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showLogoutDialog = false
-                    authViewModel.logout()
-                    navController.navigate(route = "login") {
-                        popUpTo(route = "login") {
-                            inclusive = true
-                        } // Ripulisce lo stack di navigazione
-                    }
-
-                }) {
-                    Text("Conferma")
+                authViewModel.logout()
+                navController.navigate("login") {
+                    popUpTo("login") { inclusive = true }
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Annulla")
-                }
-            }
+            onDismiss = { showLogoutDialog = false }
         )
     }
 
-    // Dialogo di conferma Eliminazione Account
+    // Delete Account Dialog
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Conferma Eliminazione Account") },
-            text = { Text("Questa azione è irreversibile. Sei sicuro di voler eliminare il tuo account?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDeleteDialog = false
-                    Log.d("Delete", "click avvenuto sul tasto di eliminazione")
-                    authViewModel.deleteAccount() // Azione di eliminazione account
-                    //se non ci sono eccezioni
-                    navController.navigate("login") {
-                        popUpTo("login") { inclusive = true } // Ripulisce lo stack di navigazione
-                    }
-                }) {
-                    Text("Conferma")
+        ConfirmationDialog(
+            title = "Conferma Eliminazione Account",
+            text = "Questa azione è irreversibile. Sei sicuro?",
+            onConfirm = {
+                showDeleteDialog = false
+                authViewModel.deleteAccount()
+                navController.navigate("login") {
+                    popUpTo("login") { inclusive = true }
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Annulla")
-                }
-            }
+            onDismiss = { showDeleteDialog = false }
         )
     }
 }
 
 @Composable
-fun DrawerItem(text: String, icon: ImageVector, onClick: () -> Unit) {
-    Row(
+fun MenuItem(text: String, icon: ImageVector, onClick: () -> Unit) {
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
-        Text(text, style = MaterialTheme.typography.bodyLarge)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp))
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(text, style = MaterialTheme.typography.bodyLarge)
+        }
     }
 }
 
+@Composable
+fun ConfirmationDialog(
+    title: String,
+    text: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { Text(text) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("Conferma")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Annulla")
+            }
+        }
+    )
+}

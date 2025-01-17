@@ -13,18 +13,26 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -36,15 +44,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.navigation.NavController
 import uni.matilde.lam01.data.local.AudioEntity
 import uni.matilde.lam01.data.remote.models.MyAudiosResponse
 import kotlin.math.round
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserRecordingsScreen(
     viewModel: UserRecordingsViewModel,
-    onBack: () -> Unit
+    navController: NavController
 ) {
     val recordings by viewModel.displayedRecordings.observeAsState(initial = emptyList())
     val viewMessage by viewModel.viewMessage.collectAsState()
@@ -64,57 +73,78 @@ fun UserRecordingsScreen(
         }
     }
 
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.primaryContainer)
-            .padding(16.dp)
-    ) {
-        // Header con il pulsante Indietro
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.Default.Close, contentDescription = "Torna indietro")
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            "Le mie registrazioni",
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        if (recordings?.isEmpty()!!) {
-            Text(
-                text = "Nessuna registrazione disponibile",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        } else {
-            LazyColumn {
-                items(recordings) { recording ->
-                    RecordingItem(
-                        recording = recording,
-                        onClick = {
-                            viewModel.showRecordingInfo(recording.id)
-                            showAudioInfo = true
-                        },
-                        onToggleVisibility = {
-                            if (recording.hidden != null && recording.hidden == true) {
-                                viewModel.showRecording(recording.id)
-                            } else {
-                                viewModel.hideRecording(recording.id)
-                            }
-                        },
-                        onDelete = {
-                            viewModel.deleteRecording(recording.id)
-                        }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Le mie registrazioni",
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
+                },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        val isBackStackEmpty = navController.previousBackStackEntry == null
+                        if (isBackStackEmpty) {
+                            navController.navigate("map") {
+                                popUpTo("map") {
+                                    inclusive = true
+                                }
+                            }
+                        } else {
+                            navController.popBackStack() // Torna alla destinazione precedente
+                        }
+                    }) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Apri Menù",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .padding(paddingValues)
+                .padding(16.dp)
+        ) {
+            if (recordings?.isEmpty()!!) {
+                Text(
+                    text = "Nessuna registrazione disponibile",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            } else {
+                LazyColumn {
+                    items(recordings) { recording ->
+                        RecordingItem(
+                            recording = recording,
+                            onClick = {
+                                viewModel.showRecordingInfo(recording.id)
+                                showAudioInfo = true
+                            },
+                            onToggleVisibility = {
+                                if (recording.hidden != null && recording.hidden == true) {
+                                    viewModel.showRecording(recording.id)
+                                } else {
+                                    viewModel.hideRecording(recording.id)
+                                }
+                            },
+                            onDelete = {
+                                viewModel.deleteRecording(recording.id)
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -133,6 +163,7 @@ fun UserRecordingsScreen(
 
 }
 
+
 @Composable
 fun RecordingItem(
     recording: DisplayedAudioInfo,
@@ -145,16 +176,22 @@ fun RecordingItem(
     var mediaPlayer: MediaPlayer? = remember { null }
 
 
-    Box(
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        elevation = androidx.compose.material3.CardDefaults.cardElevation(4.dp),
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.secondaryContainer)
-            .padding(16.dp)
-            .padding(vertical = 8.dp)
+            .heightIn(min = 100.dp, max = 300.dp)
             .clickable { onClick() } // Aggiunto il modificatore clickable
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             var position = ""
             if (recording.locationName.trim().isNullOrEmpty()) {

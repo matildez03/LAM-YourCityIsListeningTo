@@ -116,7 +116,7 @@ fun AppNavHost(
         }
 
         composable("audios") {
-            UserRecordingsScreen(viewModel=userRecordingsViewModel, onBack = {navController.navigate("menu")})
+            UserRecordingsScreen(viewModel=userRecordingsViewModel, navController=navController)
         }
 
         composable("stats") {

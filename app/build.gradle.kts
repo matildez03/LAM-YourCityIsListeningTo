@@ -81,6 +81,8 @@ dependencies {
     implementation("androidx.compose.material:material")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.runtime:runtime-livedata")
+    implementation("androidx.compose.material:material-icons-extended:1.5.1")
+
 
     // ViewModel integration with Compose
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose")

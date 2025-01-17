@@ -1,10 +1,12 @@
 package uni.matilde.lam01.ui.stats
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -46,9 +48,20 @@ fun StatisticsScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigate(route = "menu") }) {
+                    IconButton(onClick = {
+                        val isBackStackEmpty = navController.previousBackStackEntry == null
+                        if (isBackStackEmpty) {
+                            navController.navigate("map") {
+                                popUpTo("map") {
+                                    inclusive = true
+                                }
+                            }
+                        } else {
+                            navController.popBackStack() // Torna alla destinazione precedente
+                        }
+                    }) {
                         Icon(
-                            Icons.Default.Menu,
+                            Icons.Default.ArrowBack,
                             contentDescription = "Apri Menù",
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
@@ -66,6 +79,7 @@ fun StatisticsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.primaryContainer)
                 .verticalScroll(rememberScrollState())
                 .padding(paddingValues)
                 .padding(16.dp),
@@ -179,7 +193,9 @@ fun StatisticsCard(
             contentColor = MaterialTheme.colorScheme.onSurface
         ),
         elevation = androidx.compose.material3.CardDefaults.cardElevation(4.dp),
-        modifier = Modifier.fillMaxWidth().heightIn(min = 100.dp, max = 300.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 100.dp, max = 300.dp)
     ) {
         Column(
             modifier = Modifier

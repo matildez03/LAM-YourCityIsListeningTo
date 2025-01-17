@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +31,7 @@ import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material3.Button
@@ -207,14 +210,14 @@ fun MainMapScreen(
         }) {
             Scaffold(topBar = @androidx.compose.runtime.Composable {
                 TopAppBar(
-                    title = { Text("Mappa", color = MaterialTheme.colorScheme.onPrimary) },
+                    title = { Text("", color = MaterialTheme.colorScheme.onPrimary) },
                     navigationIcon = {
                         IconButton(onClick = {
                             navController.navigate("menu")
                             Log.d("click event", "Button di apertura menù cliccato")
                         }) {
                             Icon(
-                                Icons.Default.Menu,
+                                Icons.Default.Person,
                                 contentDescription = "Apri Menù",
                                 tint = MaterialTheme.colorScheme.onPrimary
                             )
@@ -226,41 +229,40 @@ fun MainMapScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(paddingValues) // Applica il padding fornito da Scaffold
+                        .padding(paddingValues)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         //barra di ricerca
                         TextField(
                             value = filterText,
                             onValueChange = { text -> filterText = text },
-                            label = { Text("Filtra") },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Search, contentDescription = "Cerca"
-                                )
-                            },
+                            placeholder = { Text("Filtra la ricerca") },
                             shape = RoundedCornerShape(8.dp),
                             colors = TextFieldDefaults.textFieldColors(
                                 backgroundColor = Color(0xFFF0F0F0),
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent
                             ),
+                            textStyle = MaterialTheme.typography.bodySmall,
                             modifier = Modifier
                                 .weight(1f)
+                                .height(45.dp)
                                 .padding(end = 8.dp)
                         )
 
                         Button(
                             onClick = { viewModel.fetchFilteredMarkers(filterText) },
                             shape = CircleShape,
-                            modifier = Modifier.size(48.dp),
-                            contentPadding = PaddingValues(0.dp)
+                            modifier = Modifier.size(40.dp),
+                            contentPadding = PaddingValues(4.dp)
                         ) {
                             Icon(Icons.Default.Search, contentDescription = "Avvia ricerca")
                         }
+
+                        Spacer(modifier = Modifier.width(8.dp))
 
                         // Pulsante "Rimuovi filtro"
                         Button(
@@ -273,8 +275,8 @@ fun MainMapScreen(
                                 }
                             },
                             shape = CircleShape,
-                            modifier = Modifier.size(48.dp),
-                            contentPadding = PaddingValues(0.dp)
+                            modifier = Modifier.size(40.dp),
+                            contentPadding = PaddingValues(4.dp)
                         ) {
                             Icon(Icons.Default.Close, contentDescription = "Rimuovi filtro")
                         }
@@ -329,11 +331,11 @@ fun MainMapScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
                         text = "Posizione attuale: $locationName",
-                        modifier = Modifier.padding(all = 16.dp)
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 5.dp)
                     )
                     Button(
                         onClick = {
