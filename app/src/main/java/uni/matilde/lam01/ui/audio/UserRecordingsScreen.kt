@@ -125,7 +125,7 @@ fun UserRecordingsScreen(
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             } else {
-                LazyColumn {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     items(recordings) { recording ->
                         RecordingItem(
                             recording = recording,

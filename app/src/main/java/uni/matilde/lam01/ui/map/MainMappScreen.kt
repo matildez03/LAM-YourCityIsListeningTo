@@ -217,9 +217,12 @@ fun MainMapScreen(
                             Log.d("click event", "Button di apertura menù cliccato")
                         }) {
                             Icon(
-                                Icons.Default.Person,
+                                Icons.Default.Menu,
                                 contentDescription = "Apri Menù",
-                                tint = MaterialTheme.colorScheme.onPrimary
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .padding(start = 12.dp)
                             )
                         }
                     },

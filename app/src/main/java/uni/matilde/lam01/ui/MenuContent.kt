@@ -127,6 +127,28 @@ fun MenuContent(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Elimina Account")
                 }
+
+                // Sezione About
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
+                ) {
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Your City is Listening To",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    Text(
+                        text = "Versione 1.0\nSviluppata da Matilde Zoccolillo",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
             }
         }
     )
