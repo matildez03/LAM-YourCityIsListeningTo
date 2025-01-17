@@ -35,11 +35,6 @@ class MainActivity : ComponentActivity() {
             AppNavHost(
                 isAuthenticated = isAuthenticated.value,
                 preferencesHelper = preferencesHelper,
-                onLoginSuccess = { token ->
-                    // Salva il token e aggiorna lo stato
-                    preferencesHelper.saveToken(token)
-                    isAuthenticated.value = true
-                },
                 navigateTo = navigateTo // Passa l'istruzione di navigazione
             )
         }

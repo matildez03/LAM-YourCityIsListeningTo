@@ -43,6 +43,8 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        System.setProperty("flogger.backend_factory", "com.google.common.flogger.backend.system.DefaultPlatform")
+
         NotificationHelper.createNotificationChannels(this)
 
         instance = this

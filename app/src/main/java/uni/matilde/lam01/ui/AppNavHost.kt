@@ -28,7 +28,6 @@ import uni.matilde.lam01.util.Exceptions.GlobalExceptionHandler
 fun AppNavHost(
     isAuthenticated: Boolean,
     preferencesHelper: PreferencesHelper,
-    onLoginSuccess: (String) -> Unit,
     navigateTo: String?
 ) {
     val navController = rememberNavController()
@@ -48,14 +47,12 @@ fun AppNavHost(
         }
     }
 
-    // Ottiene l'istanza di MapViewModel
     val mapViewModelFactory = MapViewModelFactory(App.instance.mapRepository)
     val mapViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
         modelClass = MapViewModel::class.java,
         factory = mapViewModelFactory
     )
 
-    // Ottiene l'istanza di AuthViewModel
     val authViewModelFactory =
         AuthViewModelFactory(App.instance.authRepository)
     val authViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
@@ -63,7 +60,6 @@ fun AppNavHost(
         factory = authViewModelFactory
     )
 
-    // Ottiene l'istanza di AudioViewModel
     val audioViewModelFactory = AudioViewModelFactory(App.instance.audioRepository)
     val audioViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
         modelClass = AudioViewModel::class.java,
@@ -96,14 +92,14 @@ fun AppNavHost(
                         popUpTo("login") { inclusive = true }
                     }
                 },
-                factory = authViewModelFactory // Passa la factory alla LoginScreen
+                factory = authViewModelFactory
             )
         }
 
         composable("signup"){
             SignUpScreen(
                 navigateToLogin = { navController.navigate("login") },
-                factory = authViewModelFactory // Passa la factory alla SignUpScreen
+                factory = authViewModelFactory
             )
         }
 
