@@ -24,16 +24,24 @@
         android:theme="@style/Theme.LAM01"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
+
         <activity
-            android:name=".MainActivity"
+            android:name=".SplashActivity"
             android:exported="true"
-            android:label="@string/yslt_main"
-            android:theme="@style/Theme.LAM01">
+            android:theme="@style/Theme.LAM01.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/yslt_main"
+            android:theme="@style/Theme.LAM01">
+        </activity>
+
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyAfDDMKH9V6ny6xoortTnbDUMs4bsB5taM" />

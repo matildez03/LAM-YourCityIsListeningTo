@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,10 +21,9 @@ fun AudioInfoBottomSheet(audio: AudioResponse, locationName: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp) // Margine esterno
             .clip(RoundedCornerShape(16.dp)) // Arrotonda i bordi
-            .background(MaterialTheme.colors.surface)
-            .border(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .border(1.dp, MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
             .padding(16.dp) // Padding interno
     ) {
         Column(
@@ -31,7 +31,7 @@ fun AudioInfoBottomSheet(audio: AudioResponse, locationName: String) {
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            Text(text = "Dettagli Registrazione", style = MaterialTheme.typography.h6)
+            Text(text = "Dettagli Registrazione", style = MaterialTheme.typography.bodyMedium)
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = "Autore: ${audio.creator_username}")
             Text(text = "Posizione: ${locationName}")
