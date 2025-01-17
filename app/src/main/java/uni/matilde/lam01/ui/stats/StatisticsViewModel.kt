@@ -1,5 +1,6 @@
 package uni.matilde.lam01.ui.stats
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -28,6 +29,7 @@ class StatisticsViewModel(private val repository: AudioRepository) : ViewModel()
     val genreDistribution: LiveData<Result<List<GenreCount>>> get() = _genreDistribution
 
     fun getTotalAudios() {
+        Log.d("AudioViewModel", "Ricerca degli audio totali...")
         viewModelScope.launch {
             try {
                 val result = repository.getAudioCount()

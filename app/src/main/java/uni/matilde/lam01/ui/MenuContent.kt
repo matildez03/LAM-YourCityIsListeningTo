@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.AlertDialog
@@ -87,7 +88,7 @@ fun MenuContent(
             navController.navigate("audios")
         })
 
-        DrawerItem("Statistiche", Icons.Default.Email, onClick = {
+        DrawerItem("Statistiche", Icons.Default.Info, onClick = {
             navController.navigate("stats")
         })
 

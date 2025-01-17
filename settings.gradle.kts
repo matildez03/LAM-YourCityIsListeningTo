@@ -2,8 +2,7 @@ pluginManagement {
     repositories {
         google()
         mavenCentral()
-        gradlePluginPortal()
-    }
+        gradlePluginPortal() }
 }
 
 rootProject.name = "LAM01"

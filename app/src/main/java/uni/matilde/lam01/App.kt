@@ -46,8 +46,8 @@ class App : Application() {
         NotificationHelper.createNotificationChannels(this)
 
         instance = this
-        preferencesHelper = PreferencesHelper(this)
         appDatabase = AppDatabase.getDatabase(this)
+        preferencesHelper = PreferencesHelper(this)
         tokenManager = TokenManager(preferencesHelper)
         authRepository = AuthRepository.getInstance(RetrofitInstance.api, preferencesHelper, tokenManager)
         tokenService = TokenService(tokenManager, preferencesHelper, authRepository)

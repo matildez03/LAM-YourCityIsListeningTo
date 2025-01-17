@@ -1,17 +1,22 @@
 package uni.matilde.lam01.ui.stats
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,6 +28,13 @@ fun StatisticsScreen(
     val averageBpm by viewModel.averageBpm.observeAsState(Result.success(0.0))
     val moodDistribution by viewModel.moodDistribution.observeAsState(Result.success(emptyList()))
     val genreDistribution by viewModel.genreDistribution.observeAsState(Result.success(emptyList()))
+
+    LaunchedEffect(Unit) {
+        viewModel.getTotalAudios()
+        viewModel.getAverageBpm()
+        viewModel.getGenreDistribution()
+        viewModel.getMoodDistribution()
+    }
 
     Scaffold(
         topBar = {
@@ -54,17 +66,11 @@ fun StatisticsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(paddingValues)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Titolo principale
-            Text(
-                text = "Statistiche Generali",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
             // Statistiche generali
             StatisticsCard(
                 title = "Audio Totali",
@@ -93,12 +99,28 @@ fun StatisticsScreen(
                 title = "Distribuzione degli stati d'animo",
                 content = {
                     if (moodDistribution.isSuccess) {
-                        val moods = moodDistribution.getOrNull() ?: emptyList()
+                        // Ottieni i dati e ordina per valore decrescente
+                        val moods = moodDistribution.getOrNull()?.sortedByDescending { it.count }
+                            ?: emptyList()
                         if (moods.isEmpty()) {
                             Text("Nessun dato disponibile")
                         } else {
                             moods.forEach { mood ->
-                                Text("${mood.mood}: ${mood.count}")
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = mood.mood, // Nome del mood in grassetto
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "${mood.count}", // Valore del conteggio
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                             }
                         }
                     } else {
@@ -107,16 +129,33 @@ fun StatisticsScreen(
                 }
             )
 
+
             StatisticsCard(
                 title = "Distribuzione dei generi",
                 content = {
                     if (genreDistribution.isSuccess) {
-                        val genres = genreDistribution.getOrNull() ?: emptyList()
+                        val genres = genreDistribution.getOrNull()?.sortedByDescending { it.count }
+                            ?: emptyList()
                         if (genres.isEmpty()) {
                             Text("Nessun dato disponibile")
                         } else {
                             genres.forEach { genre ->
-                                Text("${genre.genre}: ${genre.count}")
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = genre.genre,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "${genre.count}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                             }
                         }
                     } else {
@@ -140,11 +179,12 @@ fun StatisticsCard(
             contentColor = MaterialTheme.colorScheme.onSurface
         ),
         elevation = androidx.compose.material3.CardDefaults.cardElevation(4.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().heightIn(min = 100.dp, max = 300.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {

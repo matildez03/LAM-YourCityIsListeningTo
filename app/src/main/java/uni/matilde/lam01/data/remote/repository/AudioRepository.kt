@@ -63,6 +63,9 @@ class AudioRepository(
         }
     }
 
+    private val currentUsername: String?
+        get() = preferencesHelper.getUsername()
+
 
     // Dati remoti
 
@@ -148,7 +151,7 @@ class AudioRepository(
         } catch (e: HttpException) {
             Log.e("AuthRepository", "Errore HTTP: ${e.message()}")
             Result.failure(Exception("Errore HTTP: ${e.code()}"))
-        }catch (e: Exception) {
+        } catch (e: Exception) {
             Log.e("AudioRepository", "Errore durante la chiamata API: ${e.message}")
             Result.failure(e)
         }
@@ -190,9 +193,8 @@ class AudioRepository(
 
     suspend fun getAllMyLocalAudios(): Result<List<AudioEntity>> {
         return try {
-            val username = preferencesHelper.getUsername()
-            if (username != null) {
-                Result.success(audioDao.getAllByUsername(username))
+            if (currentUsername != null) {
+                Result.success(audioDao.getAllByUsername(currentUsername.toString()))
             } else {
                 Result.failure(Exception("Username non trovato. Probabilmente il token è scaduto."))
             }
@@ -211,69 +213,77 @@ class AudioRepository(
         }
     }
 
-    fun getAudioCount(): Result<Int>{
-        return try{
-            val username = preferencesHelper.getUsername()
-            if(username != null) {
-                Result.success(audioDao.getAudioCount(username))
-            } else{
-                throw AuthenticationException("Errore di autenticazione")
-            }
-        } catch (e: Exception) {
-            Log.e("AudioRepository", "Errore nell'eliminazione locali: ${e.message}")
-            Result.failure(e)
-        }
-     }
-
-    fun getAverageBpm(): Result<Double>{
-        return try{
-            val username = preferencesHelper.getUsername()
-            if(username != null) {
-                Result.success(audioDao.getAverageBpm(username)!!)
-            } else{
-                throw AuthenticationException("Errore di autenticazione")
-            }
-        } catch (e: Exception) {
-            Log.e("AudioRepository", "Errore nell'eliminazione locali: ${e.message}")
-            Result.failure(e)
-        }
-    }
-
-    fun getMoodDistribution(): Result<List<MoodCount>> {
+    suspend fun getAudioCount(): Result<Int> {
+        Log.d("AudioRepository", "Inizio funzione get audio count")
         return try {
             val username = preferencesHelper.getUsername()
+            Log.d("AudioRepository", "Username: $username")
             if (username != null) {
-                Result.success(audioDao.getMoodDistribution(username))
+                val count = audioDao.getAudioCount(username)
+                Log.d("AudioRepository", "Audio totali: $count")
+                Result.success(count)
             } else {
                 throw AuthenticationException("Errore di autenticazione")
             }
         } catch (e: Exception) {
-            Log.e("AudioRepository", "Errore nell'eliminazione locali: ${e.message}")
+            Log.e("AudioRepository", "Errore nel recupero dei dati locali: ${e.message}")
             Result.failure(e)
         }
     }
 
-
-    fun getGenreDistribution(): Result<List<GenreCount>>{
-        return try{
-            val username = preferencesHelper.getUsername()
-            if(username != null) {
-                Result.success(audioDao.getGenreDistribution(username))
-            } else{
+    suspend fun getAverageBpm(): Result<Double> {
+        return try {
+            if (currentUsername != null) {
+                val count = audioDao.getAverageBpm(currentUsername.toString())
+                Log.d("AudioRepository", "Avg bpm: $count")
+                Result.success(count!!)
+            } else {
                 throw AuthenticationException("Errore di autenticazione")
             }
         } catch (e: Exception) {
-            Log.e("AudioRepository", "Errore nell'eliminazione locali: ${e.message}")
+            Log.e("AudioRepository", "Errore nel recupero dei dati locali: ${e.message}")
             Result.failure(e)
         }
     }
 
-    suspend fun deleteAllUserRemoteAudios(){
-        try{
+    suspend fun getMoodDistribution(): Result<List<MoodCount>> {
+        return try {
+            if (currentUsername != null) {
+                val count = audioDao.getMoodDistribution(currentUsername.toString())
+                Log.d("AudioRepository", "Distribuzione mood: $count")
+                Result.success(count)
+            } else {
+                throw AuthenticationException("Errore di autenticazione")
+            }
+        } catch (e: Exception) {
+            Log.e("AudioRepository", "Errore nel recupero dei dati locali: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+
+    suspend fun getGenreDistribution(): Result<List<GenreCount>> {
+        return try {
             val username = preferencesHelper.getUsername()
-            if(username != null) {
-                Result.success(audioDao.deleteByUsername(username))
-            } else{
+            Log.d("AudioRepository", "Username: $username")
+            if (username != null) {
+                val count = audioDao.getGenreDistribution(username)
+                Log.d("AudioRepository", "Distribuzione generi: $count")
+                Result.success(count)
+            } else {
+                throw AuthenticationException("Errore di autenticazione")
+            }
+        } catch (e: Exception) {
+            Log.e("AudioRepository", "Errore nel recupero dei dati locali: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteAllUserRemoteAudios() {
+        try {
+            if (currentUsername != null) {
+                Result.success(audioDao.deleteByUsername(currentUsername.toString()))
+            } else {
                 throw AuthenticationException("Errore di autenticazione")
             }
         } catch (e: Exception) {
@@ -341,10 +351,10 @@ class AudioRepository(
     }
 
 
-    suspend fun deleteLocalAndRemoteUserAudios(username: String){
+    suspend fun deleteLocalAndRemoteUserAudios(username: String) {
         //rimozione brani in remoto
         val myaudios = fetchMyAudios().getOrNull()
-        if(myaudios!=null) {
+        if (myaudios != null) {
             for (audio in myaudios) {
                 val id = audio.id
                 deleteSong(id)
