@@ -116,29 +116,24 @@ fun MainMapScreen(
     val bottomSheetState =
         rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     var filterText by remember { mutableStateOf("") }
-
     val userLocation by viewModel.userLocation.observeAsState()
     val markers by viewModel.shownMarkers.observeAsState()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val isLoading by viewModel.isLoading.observeAsState(false)
-    val networkChangeReceiver = remember {
-        NetworkChangeReceiver {
-            enableLocation(fusedLocationClient, viewModel)
-        }
-    }
 
 
     // Launcher per richiedere i permessi
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        // Aggiorna lo stato del permesso nel ViewModel
-        viewModel.checkLocationPermission(context)
+        viewModel.updateLocationPermission(isGranted)
     }
 
     // Controlla il permesso all'avvio del composable
     LaunchedEffect(Unit) {
-        viewModel.checkLocationPermission(context)
+        viewModel.checkAndRequestPermission(context) { permission ->
+            permissionLauncher.launch(permission)
+        }
         delay(500) //aggiornamento valore
         if (hasLocationPermission == false) {
             permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)

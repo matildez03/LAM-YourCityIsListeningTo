@@ -57,12 +57,28 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
     private val _isLoading = MutableLiveData(false)
     val isLoading: LiveData<Boolean> get() = _isLoading
 
-    fun checkLocationPermission(context: Context) {
-        viewModelScope.launch {
-            _hasLocationPermission.value = ContextCompat.checkSelfPermission(
+    fun checkAndRequestPermission(context: Context, requestPermission: (String) -> Unit) {
+        if (ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            _hasLocationPermission.value = true
+        } else {
+            requestPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+
+    fun updateLocationPermission(isGranted: Boolean) {
+        _hasLocationPermission.value = isGranted
+    }
+
+    private suspend fun <T> executeWithLoading(block: suspend () -> T): T {
+        _isLoading.postValue(true)
+        return try {
+            block()
+        } finally {
+            _isLoading.postValue(false)
         }
     }
 
@@ -112,26 +128,26 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
 
     fun fetchFilteredMarkers(filter: String) {
         viewModelScope.launch {
-            _isLoading.postValue(true) // Mostra il caricamento
-            try {
-                //filtra solo tra gli audio vicini
-                if (_nearbyMarkers.value.isNullOrEmpty()) {
-                    fetchAllMarkers()
+            executeWithLoading {
+                try {
+                    //filtra solo tra gli audio vicini
+                    if (_nearbyMarkers.value.isNullOrEmpty()) {
+                        fetchAllMarkers()
+                    }
+                    val result =
+                        mapRepository.getFilteredMarkers(_allMarkers.value!!, filter).getOrNull()
+                    if (result != null) {
+                        _filteredMarkers.postValue(result!!)
+                        _shownMarkers.postValue(result!!)
+                    } else {
+                        _errorMessage.postValue("Non ci sono risultati dal tuo filtro!")
+                    }
+                } catch (e: Exception) {
+                    _errorMessage.postValue("Errore durante il caricamento.")
+                } finally {
                 }
-                val result =
-                    mapRepository.getFilteredMarkers(_allMarkers.value!!, filter).getOrNull()
-                if (result != null) {
-                    _filteredMarkers.postValue(result!!)
-                    _shownMarkers.postValue(result!!)
-                } else {
-                    _errorMessage.postValue("Non ci sono risultati dal tuo filtro!")
-                }
-            } catch (e: Exception) {
-                _errorMessage.postValue("Errore durante il caricamento.")
-            } finally {
-                _isLoading.postValue(false) // Nascondi il caricamento
+                Log.d("MapViewModel", "Marker caricati: ${_filteredMarkers.value?.size ?: 0}")
             }
-            Log.d("MapViewModel", "Marker caricati: ${_filteredMarkers.value?.size ?: 0}")
         }
     }
 

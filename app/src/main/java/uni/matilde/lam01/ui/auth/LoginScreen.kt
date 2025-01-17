@@ -92,7 +92,6 @@ fun LoginScreen(
                 )
             }
             else -> {
-                // Stato iniziale o fallback
 
             }
         }
