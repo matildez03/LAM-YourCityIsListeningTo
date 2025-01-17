@@ -6,6 +6,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -58,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -77,6 +79,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import uni.matilde.lam01.R
 import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.data.remote.models.AudioResponse
 import uni.matilde.lam01.ui.MenuContent
@@ -210,7 +213,18 @@ fun MainMapScreen(
         }) {
             Scaffold(topBar = @androidx.compose.runtime.Composable {
                 TopAppBar(
-                    title = { Text("", color = MaterialTheme.colorScheme.onPrimary) },
+                    title = {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(start=10.dp),
+                            horizontalAlignment = Alignment.Start,
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.soundmap_title_white),
+                                contentDescription = "Logo SoundMap",
+                                modifier = Modifier.size(120.dp)
+                            )
+                        }
+                    },
                     navigationIcon = {
                         IconButton(onClick = {
                             navController.navigate("menu")
