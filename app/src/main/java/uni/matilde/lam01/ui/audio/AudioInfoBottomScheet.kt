@@ -21,7 +21,6 @@ fun AudioInfoBottomSheet(audio: AudioResponse, locationName: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp)) // Arrotonda i bordi
             .background(MaterialTheme.colorScheme.primaryContainer)
             .border(1.dp, MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
             .padding(16.dp) // Padding interno
@@ -31,7 +30,7 @@ fun AudioInfoBottomSheet(audio: AudioResponse, locationName: String) {
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            Text(text = "Dettagli Registrazione", style = MaterialTheme.typography.bodyMedium)
+            Text(text = "Dettagli Registrazione", style = MaterialTheme.typography.bodyLarge)
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = "Autore: ${audio.creator_username}")
             Text(text = "Posizione: ${locationName}")

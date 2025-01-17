@@ -1,14 +1,11 @@
 package uni.matilde.lam01
 
-import android.view.View
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.RelativeLayout
-import android.view.Gravity
-import android.view.ViewGroup
+import androidx.activity.ComponentActivity
 
 class SplashActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
