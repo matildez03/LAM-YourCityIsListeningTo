@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.navigation.NavController
 import uni.matilde.lam01.data.local.AudioEntity
@@ -58,7 +59,7 @@ fun UserRecordingsScreen(
     val recordings by viewModel.displayedRecordings.observeAsState(initial = emptyList())
     val viewMessage by viewModel.viewMessage.collectAsState()
     val audioInfo by viewModel.audioInfo.observeAsState()
-    var showAudioInfo by remember { mutableStateOf(false) }
+    var showAudioInfo by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {

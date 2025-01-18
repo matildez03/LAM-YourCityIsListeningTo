@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import uni.matilde.lam01.data.local.AudioEntity
 import uni.matilde.lam01.data.remote.models.AudioResponse
 import uni.matilde.lam01.data.remote.repository.AudioRepository
 import uni.matilde.lam01.data.remote.repository.MapRepository
@@ -34,6 +35,9 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
     // LiveData per la posizione dell'utente
     private val _userLocation = MutableLiveData<LatLng?>()
     val userLocation: LiveData<LatLng?> get() = _userLocation
+
+    private var _selectedAudio = MutableLiveData<AudioResponse>()
+    val selectedAudio: LiveData<AudioResponse> get() = _selectedAudio
 
     // LiveData per i marker sulla mappa
     private val _allMarkers = MutableLiveData<List<MapMarker>>()
@@ -216,15 +220,14 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
         _userLocation.postValue(location) // Aggiorna il valore della posizione utente
     }
 
-    suspend fun getAudioInfo(audioId: Int): AudioResponse? {
+    suspend fun getAudioInfo(audioId: Int) {
         return withContext(Dispatchers.IO) {
             try {
                 val result = mapRepository.getAudioInfo(audioId)
                 if (result.isSuccess) {
-                    result.getOrNull()
+                    result.getOrNull().also { _selectedAudio.postValue(it) }
                 } else {
                     Log.e("MapViewModel", "Errore nel recupero dell'audio con id $audioId")
-                    null
                 }
             } catch (e: Exception) {
                 Log.e("MapViewModel", "Eccezione durante il recupero dell'audio: ${e.message}")

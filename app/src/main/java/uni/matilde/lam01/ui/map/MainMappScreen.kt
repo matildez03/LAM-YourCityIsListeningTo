@@ -111,11 +111,11 @@ fun MainMapScreen(
     // Ottenere il nome della posizione
     val locationName by viewModel.locationName.observeAsState("Posizione sconosciuta")
     val coroutineScope = rememberCoroutineScope()
-    var selectedAudio by remember { mutableStateOf<AudioResponse?>(null) }
-    var selectedLocationName by remember { mutableStateOf<String?>(null) }
+    val selectedAudio by viewModel.selectedAudio.observeAsState()
+    var selectedLocationName by rememberSaveable { mutableStateOf<String?>(null) }
     val bottomSheetState =
         rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
-    var filterText by remember { mutableStateOf("") }
+    var filterText by rememberSaveable  { mutableStateOf("") }
     val userLocation by viewModel.userLocation.observeAsState()
     val markers by viewModel.shownMarkers.observeAsState()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -127,6 +127,13 @@ fun MainMapScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         viewModel.updateLocationPermission(isGranted)
+    }
+
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(
+            userLocation ?: LatLng(44.4949, 11.3426), // Bologna come fallback
+            12f
+        )
     }
 
     // Controlla il permesso all'avvio del composable
@@ -141,14 +148,6 @@ fun MainMapScreen(
             enableLocation(fusedLocationClient, viewModel)
         }
         Log.d("MainMapScreen", "Permesso alla posizione: ${hasLocationPermission}")
-    }
-
-
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(
-            userLocation ?: LatLng(44.4949, 11.3426), // Bologna come fallback
-            12f
-        )
     }
 
     // Aggiorna la posizione della fotocamera quando la posizione dell'utente cambia
@@ -324,7 +323,6 @@ fun MainMapScreen(
 
                                             // Associa i dati solo a questo marker
                                             if (audioInfo != null) {
-                                                selectedAudio = audioInfo
                                                 selectedLocationName = positionName
                                                 bottomSheetState.show()
                                             } else {
