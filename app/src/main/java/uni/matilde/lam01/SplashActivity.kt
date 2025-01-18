@@ -51,6 +51,6 @@ class SplashActivity : ComponentActivity() {
         layout.postDelayed({
             startActivity(Intent(this, MainActivity::class.java))
             finish()
-        }, 3000) // Durata della splash screen (3 secondi)
+        }, 2000) // Durata della splash screen (2 secondi)
     }
 }

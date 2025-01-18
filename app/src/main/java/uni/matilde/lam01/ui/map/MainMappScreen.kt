@@ -53,6 +53,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -87,7 +88,6 @@ import uni.matilde.lam01.ui.audio.AudioInfoBottomSheet
 import uni.matilde.lam01.ui.audio.AudioRecordingDialog
 import uni.matilde.lam01.ui.audio.AudioViewModel
 import uni.matilde.lam01.ui.auth.AuthViewModel
-import uni.matilde.lam01.work.NetworkChangeReceiver
 
 
 @Composable
@@ -104,8 +104,8 @@ fun MainMapScreen(
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val mapUiSettings = remember { MapUiSettings(myLocationButtonEnabled = true) }
     val mapProperties = remember { MapProperties(isMyLocationEnabled = true) }
-    var showRecordingDialog by remember { mutableStateOf(false) }
-    var showUploadResultDialog by remember { mutableStateOf(false) }
+    var showRecordingDialog by rememberSaveable { mutableStateOf(false) }
+    var showUploadResultDialog by rememberSaveable { mutableStateOf(false) }
     val errorMessage by viewModel.errorMessage.observeAsState()
     val hasLocationPermission by viewModel.hasLocationPermission.collectAsState()
     // Ottenere il nome della posizione
@@ -394,8 +394,7 @@ fun MainMapScreen(
             },
                 onUploadSuccess = {
                     showUploadResultDialog = true
-                } // Mostra il dialogo del risultato
-                ,
+                },// Mostra il dialogo del risultato
                 userLocation = it,
                 locationName = locationName,
                 audioViewModel = audioViewModel,

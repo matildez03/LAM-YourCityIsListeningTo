@@ -16,6 +16,7 @@ import androidx.lifecycle.viewModelScope
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.ReturnCode
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -70,6 +71,12 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
 
     private val _isRecording = MutableStateFlow(false)
     val isRecording: StateFlow<Boolean> = _isRecording
+
+    private val _recordingDuration = MutableStateFlow(0)
+    val recordingDuration: StateFlow<Int> = _recordingDuration
+
+    private var timerJob: Job? = null
+
 
 
     fun checkRecordAudioPermission(context: Context) {
@@ -258,6 +265,23 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
                 "File audio inesistente o vuoto ${audioFile.absolutePath} - lunghezza ${audioFile.length()} - esiste: ${audioFile.exists()}"
             )
         }
+    }
+
+    fun startTimer() {
+        if (timerJob?.isActive == true) return
+        timerJob?.cancel() // Cancella eventuali timer già in esecuzione
+        timerJob = viewModelScope.launch {
+            _recordingDuration.value = 0
+            while (_isRecording.value) {
+                delay(1000L)
+                _recordingDuration.value = _recordingDuration.value + 1
+            }
+        }
+    }
+
+    fun stopTimer() {
+        timerJob?.cancel() // Ferma il timer se in esecuzione
+        timerJob = null
     }
 
     private fun convertToMp3(mp4FilePath: String, mp3FilePath: String, context: Context) {

@@ -61,6 +61,7 @@ fun AudioRecordingDialog(
 
     // Stati per la registrazione
     val isRecording by audioViewModel.isRecording.collectAsState()
+    val recordingDuration by audioViewModel.recordingDuration.collectAsState()
 
     // Stati per i permessi
     val hasRecordAudioPermission by audioViewModel.hasAudiorecordPermission.collectAsState()
@@ -94,19 +95,6 @@ fun AudioRecordingDialog(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         audioViewModel.checkReadExternalStoragePermission(context)
-    }
-
-    var recordingDuration by remember { mutableStateOf(0) }
-
-    // Timer durante la registrazione
-    LaunchedEffect(isRecording) {
-        if (isRecording) {
-            recordingDuration = 0 // Resetta il timer
-            while (isRecording) {
-                delay(1000L)
-                recordingDuration++
-            }
-        }
     }
 
     // Verifica e richiedi permessi mancanti all'avvio
@@ -149,6 +137,16 @@ fun AudioRecordingDialog(
             }
         }
     }
+
+    LaunchedEffect(isRecording) {
+        if (isRecording) {
+            audioViewModel.startTimer()
+        } else {
+            audioViewModel.stopTimer()
+        }
+    }
+
+
 
     // AlertDialog per il caricamento
     if (showWifiDialog) {
