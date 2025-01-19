@@ -12,7 +12,7 @@
 
 
     <application
-        android:name=".App"
+        android:name=".core.app.App"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -26,7 +26,7 @@
         tools:targetApi="31">
 
         <activity
-            android:name=".SplashActivity"
+            android:name=".features.splash.SplashActivity"
             android:exported="true"
             android:theme="@style/Theme.LAM01.Splash">
             <intent-filter>
@@ -36,7 +36,7 @@
         </activity>
 
         <activity
-            android:name=".MainActivity"
+            android:name=".core.app.MainActivity"
             android:exported="true"
             android:label="@string/yslt_main"
             android:theme="@style/Theme.LAM01">

@@ -3,7 +3,7 @@ package uni.matilde.lam01.data.local
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
-import uni.matilde.lam01.data.remote.repository.AudioRepository
+import uni.matilde.lam01.data.repository.AudioRepository
 data class MoodCount(
     val mood: String,
     val count: Int
