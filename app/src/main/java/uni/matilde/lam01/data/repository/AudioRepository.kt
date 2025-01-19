@@ -160,7 +160,7 @@ class AudioRepository(
      */
     private suspend fun <T> executeAuthenticatedRequest(request: suspend (String) -> Result<T>): Result<T> {
         var token = tokenService.getValidToken()
-            ?: return Result.failure(Exception("Token scaduto o non disponibile"))
+            ?: throw AuthenticationException("Errore di autenticazione: username o token non trovato.")
         token = "Bearer $token"
         return request(token)
     }
@@ -212,10 +212,8 @@ class AudioRepository(
     }
 
     suspend fun getAudioCount(): Result<Int> {
-        Log.d("AudioRepository", "Inizio funzione get audio count")
         return try {
             val username = preferencesHelper.getUsername()
-            Log.d("AudioRepository", "Username: $username")
             if (username != null) {
                 val count = audioDao.getAudioCount(username)
                 Log.d("AudioRepository", "Audio totali: $count")

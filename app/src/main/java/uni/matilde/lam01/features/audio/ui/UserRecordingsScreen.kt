@@ -43,7 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.navigation.NavController
-import uni.matilde.lam01.features.audio.viewmodel.DisplayedAudioInfo
+import uni.matilde.lam01.features.audio.model.DisplayedAudioInfo
 import uni.matilde.lam01.features.audio.viewmodel.UserRecordingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

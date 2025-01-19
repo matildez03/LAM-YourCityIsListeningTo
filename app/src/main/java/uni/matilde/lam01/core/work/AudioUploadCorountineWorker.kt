@@ -48,14 +48,4 @@ class AudioUploadCoroutineWorker(
             Result.retry()
         }
     }
-
-
-    private fun createMultipartFile(filePath: String): MultipartBody.Part {
-        val file = File(filePath)
-        return MultipartBody.Part.createFormData(
-            "file",
-            file.name,
-            file.asRequestBody("audio/mpeg".toMediaTypeOrNull())
-        )
-    }
 }

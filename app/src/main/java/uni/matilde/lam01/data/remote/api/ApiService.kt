@@ -15,6 +15,8 @@ import uni.matilde.lam01.data.remote.models.TokenResponse
 import uni.matilde.lam01.data.remote.models.UploadAudioResponse
 
 interface ApiService {
+
+    // Metodi auth
     @POST("auth")
     suspend fun signUp(@Body requestBody: AuthRequest): Response<AuthResponse>
 
@@ -29,8 +31,7 @@ interface ApiService {
     suspend fun deleteAccount(@Header("Authorization") token: String): Response<DeleteAccountResponse>
 
 
-    //metodi audio
-
+    // Metodi audio
     @Multipart
     @POST("upload")
     suspend fun uploadAudio(

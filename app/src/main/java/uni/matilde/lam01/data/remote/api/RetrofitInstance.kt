@@ -13,13 +13,14 @@ object RetrofitInstance {
     private const val BASE_URL = "http://130.136.2.83/lam2024/"
 
     private val client: OkHttpClient by lazy {
-        // Configura l'interceptor per il logging
+        //Configurazione dell'istanza di OkHttpClient
+
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY // Mostra tutto il corpo delle richieste e risposte
         }
 
         OkHttpClient.Builder()
-            .addInterceptor(loggingInterceptor) // Aggiunge il logging
+            .addInterceptor(loggingInterceptor)
             .addInterceptor { chain -> // Aggiunge l'interceptor per gli header
                 val request = chain.request().newBuilder()
                     .addHeader("Content-Type", "application/json")

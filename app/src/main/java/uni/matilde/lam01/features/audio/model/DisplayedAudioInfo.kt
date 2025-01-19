@@ -1,4 +1,4 @@
-package uni.matilde.lam01.features.audio.viewmodel
+package uni.matilde.lam01.features.audio.model
 
 import com.google.android.gms.maps.model.LatLng
 

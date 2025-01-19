@@ -57,7 +57,7 @@ object NotificationHelper {
         }
     }
 
-    // Richiedere il permesso per le notifiche (necessario da Android 13+)
+    // Richiedere il permesso per le notifiche
     fun requestNotificationPermission(activity: Activity) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ActivityCompat.checkSelfPermission(
@@ -96,7 +96,7 @@ object NotificationHelper {
 
         // Intent per aprire l'app e navigare al composable "audios"
         val intent = Intent(context, MainActivity::class.java).apply {
-            putExtra("navigate_to", "audios") // Indica che vuoi navigare a "audios"
+            putExtra("navigate_to", "audios")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         val pendingIntent = PendingIntent.getActivity(

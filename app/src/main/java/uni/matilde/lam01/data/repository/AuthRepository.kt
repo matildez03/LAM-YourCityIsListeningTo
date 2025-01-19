@@ -98,7 +98,6 @@ class AuthRepository(
 
 
     suspend fun deleteAccount(): Result<DeleteAccountResponse> {
-        //TODO: aggiungi rimozione di dati e brani caricati dall'utente
         return handleApiCall {
             executeAuthenticatedRequest { token ->
                 Log.d("Delete", "Token utilizzato: $token")

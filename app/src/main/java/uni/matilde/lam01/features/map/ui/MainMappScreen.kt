@@ -105,7 +105,6 @@ fun MainMapScreen(
     var showUploadResultDialog by rememberSaveable { mutableStateOf(false) }
     val errorMessage by viewModel.errorMessage.observeAsState()
     val hasLocationPermission by viewModel.hasLocationPermission.collectAsState()
-    // Ottenere il nome della posizione
     val locationName by viewModel.locationName.observeAsState("Posizione sconosciuta")
     val coroutineScope = rememberCoroutineScope()
     val selectedAudio by viewModel.selectedAudio.observeAsState()

@@ -12,7 +12,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d("MainActivity", "onCreate started")
 
         setContent {
             val preferencesHelper = App.instance.preferencesHelper
@@ -27,7 +26,6 @@ class MainActivity : ComponentActivity() {
 
             // Legge l'intent per verificare se esiste un'istruzione di navigazione
             val navigateTo = intent?.getStringExtra("navigate_to")
-
 
 
             AppNavHost(
