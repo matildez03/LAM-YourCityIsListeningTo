@@ -91,7 +91,7 @@ object NotificationHelper {
                 Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            return // Permesso non concesso, non inviare la notifica
+            return // Permesso non concesso, non invia la notifica
         }
 
         // Intent per aprire l'app e navigare al composable "audios"

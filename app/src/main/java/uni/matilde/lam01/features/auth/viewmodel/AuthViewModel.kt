@@ -32,11 +32,8 @@ class AuthViewModel(
     // Funzione per gestire il login
     fun login(username: String, password: String) {
         viewModelScope.launch {
-            // Imposta lo stato su Loading prima di iniziare l'operazione
             _authState.value = AuthState.Loading
-            // Chiamata al repository per ottenere il token
             val result = repository.getToken(username, password)
-            // Gestione esplicita di successo ed errore
             if (result.isSuccess) {
                 _authState.value = AuthState.Success(result.getOrNull()!!)
             } else {
@@ -50,11 +47,8 @@ class AuthViewModel(
     // Funzione per la registrazione
     fun signUp(username: String, password: String) {
         viewModelScope.launch {
-            // Imposta lo stato su Loading prima di iniziare l'operazione
             _authState.value = AuthState.Loading
-            // Chiamata al repository per registrare l'utente
             val result = repository.signUp(username, password)
-            // Gestione esplicita di successo ed errore
             if (result.isSuccess) {
                 _authState.value = AuthState.Success(result.getOrNull()!!)
             } else {

@@ -26,7 +26,7 @@ class MapRepository(private val audioRepository: AudioRepository) {
         }
     }
 
-    // Ottieni tutti gli audio come marker per la mappa
+    // Ottiene tutti gli audio come marker per la mappa
     suspend fun getMarkers(): Result<List<MapMarker>> {
         return try {
             val result = audioRepository.fetchAllRemoteAudios()
@@ -159,7 +159,6 @@ class MapRepository(private val audioRepository: AudioRepository) {
     }
 
 
-    // Ottiene informazioni specifiche di un audio
     suspend fun getAudioInfo(audioId: Int): Result<AudioResponse> {
         return audioRepository.fetchAudioById(audioId)
     }

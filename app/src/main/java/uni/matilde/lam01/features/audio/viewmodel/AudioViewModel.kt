@@ -197,10 +197,6 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
         if (_mp3AudioPath.value != null) {
             val mp3File = _mp3AudioPath.value?.let { File(it) }
             if (mp3File!!.exists()) {
-                Log.d(
-                    "AudioViewModel",
-                    "Eliminazione del file precedentemente scartato in corso..."
-                )
                 val deleted = mp3File.delete()
                 if (!deleted) {
                     _errorMessage.postValue("Errore: impossibile eliminare il file esistente.")
@@ -224,8 +220,7 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
                 val mp3FilePath = mp4FilePath.replace(".mp4", ".mp3")
                 convertToMp3(mp4FilePath, mp3FilePath, context)
                 _mp3AudioPath.value = mp3FilePath
-                _isRecording.value = false // Aggiorna lo stato
-                Log.d("AudioViewModel", "Registrazione interrotta su: $mp4FilePath")
+                _isRecording.value = false
                 return mp3FilePath
             }
         } catch (e: Exception) {
@@ -328,14 +323,13 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
     }
 
     fun addAudio(audioEntity: AudioEntity) {
-        // Recupera la lista corrente o una lista vuota se è null
         val currentList = _audios.value ?: emptyList()
-
-        // Crea una nuova lista aggiungendo l'elemento
         val updatedList = currentList + audioEntity
-
-        // Aggiorna il valore di _audios
         _audios.postValue(updatedList)
+    }
+
+    fun stopPlayer(){
+        player?.stop()
     }
 
 }

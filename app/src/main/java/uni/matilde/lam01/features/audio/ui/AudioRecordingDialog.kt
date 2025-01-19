@@ -28,6 +28,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.gms.maps.model.LatLng
 import uni.matilde.lam01.data.local.PreferencesHelper
 import uni.matilde.lam01.features.audio.viewmodel.AudioViewModel
@@ -60,13 +62,12 @@ fun AudioRecordingDialog(
     // Stati per la registrazione
     val isRecording by audioViewModel.isRecording.collectAsState()
     val recordingDuration by audioViewModel.recordingDuration.collectAsState()
+    val mp3AudioPath by audioViewModel.mp3AudioPath.collectAsState()
 
     // Stati per i permessi
     val hasRecordAudioPermission by audioViewModel.hasAudiorecordPermission.collectAsState()
     val hasWriteExPermission by audioViewModel.hasWriteExPermission.collectAsState()
     val hasReadExPermission by audioViewModel.hasReadExPermission.collectAsState()
-
-    val mp3AudioPath by audioViewModel.mp3AudioPath.collectAsState()
 
     var showWifiDialog by rememberSaveable { mutableStateOf(false) }
     var showNoConnectionDialog by rememberSaveable { mutableStateOf(false) }
@@ -140,6 +141,12 @@ fun AudioRecordingDialog(
             audioViewModel.startTimer()
         } else {
             audioViewModel.stopTimer()
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            audioViewModel.stopPlayer()
         }
     }
 

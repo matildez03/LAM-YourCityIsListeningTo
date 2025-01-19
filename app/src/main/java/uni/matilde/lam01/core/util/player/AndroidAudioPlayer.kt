@@ -90,6 +90,10 @@ class AndroidAudioPlayer(
         }
     }
 
+    fun isPlaying(): Boolean{
+        return player?.isPlaying!!
+    }
+
     private fun releasePlayer() {
         player?.release()
         player = null

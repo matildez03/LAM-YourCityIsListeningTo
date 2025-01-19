@@ -107,7 +107,7 @@ class AuthRepository(
                     preferencesHelper.clearPreferences()
                     tokenManager.clearToken()
                     response.body()?.let {
-                        Log.d("Delete", "Account eliminato con successo: ${it.toString()}")
+                        Log.i("Delete", "Account eliminato con successo: ${it.toString()}")
                         Result.success(it)
                     } ?: Result.failure(Exception("Risposta vuota"))
 

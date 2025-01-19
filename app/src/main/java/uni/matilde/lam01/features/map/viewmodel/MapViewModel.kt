@@ -129,7 +129,7 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
         viewModelScope.launch {
             executeWithLoading {
                 try {
-                    //filtra solo tra gli audio vicini
+                    // filtra solo tra gli audio vicini
                     if (_nearbyMarkers.value.isNullOrEmpty()) {
                         fetchAllMarkers()
                     }
@@ -145,7 +145,7 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
                     _errorMessage.postValue("Errore durante il caricamento.")
                 } finally {
                 }
-                Log.d("MapViewModel", "Marker caricati: ${_filteredMarkers.value?.size ?: 0}")
+                Log.i("MapViewModel", "Marker caricati: ${_filteredMarkers.value?.size ?: 0}")
             }
         }
     }
@@ -157,7 +157,7 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
             if (_allMarkers.value.isNullOrEmpty()) {
                 fetchAllMarkers()
             }
-            Log.d("MapViewModel", "Markers totali: ${_allMarkers.value?.size ?: 0}")
+            Log.i("MapViewModel", "Markers totali: ${_allMarkers.value?.size ?: 0}")
             val result =
                 mapRepository.getMarkersNearby(_allMarkers.value.orEmpty(), userLocation, radius)
             if (result.isSuccess) {
@@ -205,14 +205,12 @@ class MapViewModel(private val mapRepository: MapRepository) : ViewModel() {
 
     private fun applyFilter(marker: MapMarker, filter: String): Boolean {
         if (filter.isEmpty()) return true
-        // Logica del filtro: verifica che il marker soddisfi i criteri del filtro
-        // Esempio: controllare se un attributo del marker contiene il filtro
         return marker.audioId.toString().contains(filter, ignoreCase = true) // Adatta ai tuoi criteri
     }
 
 
     fun updateUserLocation(location: LatLng) {
-        _userLocation.postValue(location) // Aggiorna il valore della posizione utente
+        _userLocation.postValue(location)
     }
 
     suspend fun getAudioInfo(audioId: Int) {

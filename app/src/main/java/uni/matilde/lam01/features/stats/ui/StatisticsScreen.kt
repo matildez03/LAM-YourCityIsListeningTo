@@ -112,7 +112,7 @@ fun StatisticsScreen(
                 title = "Distribuzione degli stati d'animo",
                 content = {
                     if (moodDistribution.isSuccess) {
-                        // Ottieni i dati e ordina per valore decrescente
+                        // Ottiene i dati e ordina per valore decrescente
                         val moods = moodDistribution.getOrNull()?.sortedByDescending { it.count }
                             ?: emptyList()
                         if (moods.isEmpty()) {
