@@ -392,7 +392,7 @@ fun AudioRecordingDialog(
                             ).show()
                         } else {
                             mp3AudioPath?.let { path ->
-                                audioViewModel.playRecording(context, path)
+                                audioViewModel.playRecording(path)
                             } ?: Toast.makeText(
                                 context,
                                 "Nessun file disponibile per la riproduzione",

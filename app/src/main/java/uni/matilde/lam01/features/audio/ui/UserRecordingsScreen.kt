@@ -1,7 +1,5 @@
 package uni.matilde.lam01.features.audio.ui
 
-import android.media.MediaPlayer
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -140,7 +138,8 @@ fun UserRecordingsScreen(
                             },
                             onDelete = {
                                 viewModel.deleteRecording(recording.id)
-                            }
+                            },
+                            viewModel = viewModel
                         )
                     }
                 }
@@ -167,16 +166,17 @@ fun RecordingItem(
     recording: DisplayedAudioInfo,
     onClick: () -> Unit,
     onToggleVisibility: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    viewModel: UserRecordingsViewModel
 ) {
-    val context = LocalContext.current
-    var isPlaying by remember { mutableStateOf(false) }
-    var mediaPlayer: MediaPlayer? = remember { null }
+
+    val currentlyPlayingId by viewModel.currentlyPlayingId.observeAsState()
+    val isPlaying = currentlyPlayingId == recording.id
+
 
     DisposableEffect(Unit) {
         onDispose {
-            mediaPlayer?.stop()
-            mediaPlayer?.release()
+            viewModel.stopAudio()
         }
     }
 
@@ -222,44 +222,9 @@ fun RecordingItem(
                 IconButton(
                     onClick = {
                         if (isPlaying) {
-                            // Stop playback
-                            mediaPlayer?.stop()
-                            mediaPlayer?.release()
-                            mediaPlayer = null
-                            isPlaying = false
+                            viewModel.stopAudio()
                         } else {
-                            // Start playback
-                            try {
-                                if (mediaPlayer?.isPlaying == true) {
-                                    isPlaying = false
-                                    mediaPlayer?.release()
-                                    mediaPlayer = null
-                                }
-                                mediaPlayer = MediaPlayer().apply {
-                                    setDataSource(recording.filePath)
-                                    prepare()
-                                    start()
-                                }
-                                isPlaying = true
-                                mediaPlayer?.setOnCompletionListener {
-                                    isPlaying = false
-                                    mediaPlayer?.release()
-                                    mediaPlayer = null
-                                }
-                            } catch (e: Exception) {
-                                Toast.makeText(
-                                    context,
-                                    "Errore nella riproduzione: ${e.message}",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                                Log.e(
-                                    "UserRecordingsScreen",
-                                    "Errore nella riproduzione: ${e.message}"
-                                )
-                                isPlaying = false
-                                mediaPlayer?.release()
-                                mediaPlayer = null
-                            }
+                            viewModel.playAudio(recording.filePath, recording.id)
                         }
                     },
                     enabled = !recording.filePath.isNullOrEmpty()!! // Disabilita se filePath è invalido

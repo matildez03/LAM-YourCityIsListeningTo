@@ -7,10 +7,7 @@ import androidx.core.net.toUri
 import java.io.File
 import java.io.IOException
 
-class AndroidAudioPlayer(
-    private val context: Context
-
-) : AudioPlayer {
+class AndroidAudioPlayer() : AudioPlayer {
 
     private var player: MediaPlayer? = null
 

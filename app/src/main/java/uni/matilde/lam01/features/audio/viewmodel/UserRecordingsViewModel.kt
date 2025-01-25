@@ -10,9 +10,11 @@ import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import uni.matilde.lam01.core.util.player.AndroidAudioPlayer
 import uni.matilde.lam01.data.local.AudioEntity
 import uni.matilde.lam01.data.repository.AudioRepository
 import uni.matilde.lam01.features.audio.model.DisplayedAudioInfo
+import java.io.File
 
 
 class UserRecordingsViewModel(private val audioRepository: AudioRepository) : ViewModel() {
@@ -27,11 +29,41 @@ class UserRecordingsViewModel(private val audioRepository: AudioRepository) : Vi
     private val _audioInfo = MutableLiveData<AudioEntity?>()
     val audioInfo: LiveData<AudioEntity?> get() = _audioInfo
 
-
     //utilizzo stateflow per notificare ogni aggiornamento del valore
     private val _viewMessage = MutableStateFlow<String?>(null)
     val viewMessage: StateFlow<String?> = _viewMessage
 
+    private var audioPlayer: AndroidAudioPlayer? = null
+
+    //variabili necessarie per le icone di play/stop
+    private val _currentlyPlayingId = MutableLiveData<Int?>()
+    val currentlyPlayingId: LiveData<Int?> = _currentlyPlayingId
+
+
+    init {
+        audioPlayer = AndroidAudioPlayer()
+    }
+
+    fun playAudio(filePath: String, id: Int) {
+        try {
+            audioPlayer?.stop()
+            audioPlayer?.playFile(File(filePath))
+            _currentlyPlayingId.value = id
+        } catch (e: Exception) {
+            Log.e("UserRecordingsViewModel", "Errore nella riproduzione: ${e.message}")
+        }
+    }
+
+    fun stopAudio() {
+        audioPlayer?.stop()
+        _currentlyPlayingId.value = null
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        audioPlayer?.stop()
+        audioPlayer = null
+    }
 
     fun clearMessage() {
         _viewMessage.value = null

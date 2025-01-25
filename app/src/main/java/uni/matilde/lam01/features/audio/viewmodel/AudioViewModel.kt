@@ -233,11 +233,11 @@ class AudioViewModel(private val repository: AudioRepository) : ViewModel() {
         return null
     }
 
-    fun playRecording(context: Context, filePath: String) {
+    fun playRecording(filePath: String) {
         val audioFile = File(filePath)
         if (audioFile.exists() && audioFile.length() > 0) {
             try {
-                player = AndroidAudioPlayer(context)
+                player = AndroidAudioPlayer()
                 player?.playFile(audioFile)
             } catch (e: Exception) {
                 _errorMessage.value = "Errore durante la riproduzione: ${e.message}"
